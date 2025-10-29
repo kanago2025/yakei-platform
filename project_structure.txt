@@ -1,0 +1,80 @@
+|____index.html
+|____README.md
+|____bfg.jar
+|____jsconfig.json
+| | |____user.js
+| | |____learning.js
+| | |____r2-uploader.js
+| | |____NewNavBar.vue
+| | |____ComponentTest.vue
+| | |____AppHeader.vue
+| | |____SimulatedLogin.vue
+| | |____WelcomeItem.vue
+| | | |____BaseFooter.vue
+| | | |____BaseNav.vue
+| | |____HelloWorld.vue
+| | |____TheWelcome.vue
+| | |____VideoUploader.vue
+| | | |____BaseCard.vue
+| | | |____BaseCTASection.vue
+| | | |____BaseButton.vue
+| | | |____BaseProgress.vue
+| | | |____BaseNav.vue
+| | | |____BaseStats.vue
+| | | |____index.js
+| | | | |____BaseButton.vue
+| | | | |____index.js
+| | | | |____BaseCard.vue
+| | | | |____index.js
+| | | |____index.js
+| | |____index.js
+| | | |____IconSupport.vue
+| | | |____IconEcosystem.vue
+| | | |____IconTooling.vue
+| | | |____IconDocumentation.vue
+| | | |____IconCommunity.vue
+| | |____AppFooter.vue
+| | | |____GroupItem.vue
+| | | |____PostItem.vue
+| | | |____QaItem.vue
+| | | |____CommunitySectionCard.vue
+| | |____UserCenter.vue
+| |____main.js
+| | |_____variables.scss
+| | |_____mixins.scss
+| | |____index.scss
+| | |_____base.scss
+| |____App.vue
+| | |____main.css
+| | |____logo.svg
+| | |____base.css
+| | |____R2Test.vue
+| | |____Practice.vue
+| | |____Video.vue
+| | |____NotesMortgage.vue
+| | |____Dashboard.vue
+| | |____About.vue
+| | |____NotFound.vue
+| | |____Home.vue
+| | |____Exam.vue
+| | |____Register.vue
+| | |____Login.vue
+| | |____Notes.vue
+| | |____Notes-viewport.vue
+| | |____NotesImportantMatters.vue
+| | |____Community.vue
+| | |____NotesAgent.vue
+| | |____index.js
+| |____style.css
+|____wrangler.toml
+|____package-lock.json
+|____test.html
+|____package.json
+| |____index.html
+| |____favicon.ico
+|____info.txt
+|____vite.config.js
+| |____basecard-test.html
+|____project_structure.txt
+|____test2.html
+|____component-test.html
