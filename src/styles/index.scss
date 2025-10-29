@@ -1,0 +1,51 @@
+// 设计系统 CSS 变量
+:root {
+  --primary: #2a7960;
+  --primary-dark: #205e4a;
+  --primary-light: #e8f5f0;
+  --bg: #f6f9fc;
+  --card-bg: #ffffff;
+  --text: #0b2130;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --radius: 12px;
+  --gap: 20px;
+  --max-width: 1200px;
+  --container-padding: 20px;
+}
+
+// 全局样式重置
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+// 基础布局类
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--container-padding);
+}
+
+// 全局字体设置
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans GB", "PingFang SC",
+    "Microsoft YaHei", "Noto Sans JP", "Noto Sans", Arial, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+// 通用工具类
+.text-primary { color: var(--primary); }
+.text-muted { color: var(--muted); }
+.bg-primary { background-color: var(--primary); }
+.bg-light { background-color: var(--primary-light); }
+
+// 响应式断点
+@media (max-width: 768px) {
+  .container {
+    padding: 0 16px;
+  }
+}

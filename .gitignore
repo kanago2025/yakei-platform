@@ -1,0 +1,30 @@
+# 视频文件
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.wmv
+
+# Wrangler
+.wrangler/
+.wrangler/state/
+
+# 依赖和构建
+node_modules/
+dist/
+build/
+*.tar.gz
+*.zip
+
+# 环境文件
+.env
+.env.*
+!.env.example
+
+# 日志
+*.log
+logs/
+
+# 系统文件
+.DS_Store
+Thumbs.db

@@ -1,0 +1,49 @@
+/* src/style.css */
+:root {
+  --primary: #2a7960;
+  --primary-dark: #205e4a;
+  --primary-light: #e8f5f0;
+  --bg: #f6f9fc;
+  --card-bg: #ffffff;
+  --text: #0b2130;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --error-color: #ef4444;
+  --radius: 12px;
+  --gap: 20px;
+  --max-width: 1200px;
+  --container-padding: 20px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans GB", "PingFang SC", 
+               "Microsoft YaHei", "Noto Sans JP", "Noto Sans", Arial, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--container-padding);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 16px;
+  }
+  
+  :root {
+    --container-padding: 16px;
+  }
+}

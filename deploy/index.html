@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宅学苑 - 日本宅建士考试中文学习平台</title>
+    <meta name="description" content="宅学苑：专为日本宅建士考试准备的中文学习平台，提供中文笔记、强化练习、真题模拟与学习社群。">
+    <style>
+        /* ========= 基础样式与变量 ========= */
+        :root {
+            --primary: #2a7960;
+            --primary-dark: #205e4a;
+            --primary-light: #e8f5f0;
+            --bg: #f6f9fc;
+            --card-bg: #ffffff;
+            --text: #0b2130;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --radius: 12px;
+            --gap: 20px;
+            --max-width: 1200px;
+            --container-padding: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans GB", "PingFang SC", "Microsoft YaHei", "Noto Sans JP", "Noto Sans", Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ========= 布局容器 ========= */
+        .container {
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 0 var(--container-padding);
+        }
+
+        /* ========= 顶部导航栏 ========= */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            text-decoration: none;
+            font-size: 18px;
+        }
+
+        .logo .mark {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 800;
+            font-size: 16px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            color: var(--muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            background: var(--primary-light);
+            color: var(--primary-dark);
+        }
+
+        .nav-links a.active {
+            font-weight: 700;
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--muted);
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        /* ========= 主标题区 ========= */
+        .hero {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 40px;
+            margin: 60px 0;
+            padding: 50px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(42, 121, 96, 0.05), rgba(42, 121, 96, 0.02));
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(42, 121, 96, 0.08) 0%, rgba(42, 121, 96, 0) 70%);
+            z-index: 0;
+        }
+
+        .hero-content {
+            flex: 1;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero h1 {
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--primary-dark);
+            margin-bottom: 16px;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: var(--muted);
+            margin-bottom: 30px;
+            max-width: 500px;
+        }
+
+        .hero-image {
+            flex: 0 0 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-svg {
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.05));
+        }
+
+        /* ========= 功能卡片区 ========= */
+        .section-title {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .section-title h2 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 12px;
+        }
+
+        .section-title p {
+            font-size: 18px;
+            color: var(--muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--gap);
+            margin: 60px 0;
+        }
+
+        .card-link {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            height: 100%;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: var(--radius);
+            box-shadow: 0 6px 18px rgba(12, 35, 50, 0.06);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(11, 33, 48, 0.04);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 16px 40px rgba(12, 35, 50, 0.12);
+            border-color: rgba(42, 121, 96, 0.15);
+        }
+
+        .card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            background: var(--primary-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            color: var(--primary);
+            font-size: 24px;
+        }
+
+        .card .title {
+            font-weight: 700;
+            color: var(--primary-dark);
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+
+        .card .desc {
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        /* ========= 底部行动按钮 ========= */
+        .cta-section {
+            text-align: center;
+            padding: 60px 0;
+            background: linear-gradient(135deg, rgba(42, 121, 96, 0.03), rgba(42, 121, 96, 0.01));
+            border-radius: 20px;
+            margin: 80px 0 40px;
+        }
+
+        .cta-section h2 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 16px;
+        }
+
+        .cta-section p {
+            font-size: 18px;
+            color: var(--muted);
+            margin-bottom: 30px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 28px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 6px 16px rgba(42, 121, 96, 0.25);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(42, 121, 96, 0.35);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--primary-dark);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-light);
+            transform: translateY(-3px);
+        }
+
+        /* ========= 页脚 ========= */
+        .footer {
+            text-align: center;
+            padding: 40px 0;
+            margin-top: 60px;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        /* ========= 响应式设计 ========= */
+        @media (max-width: 1024px) {
+            .cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .hero {
+                flex-direction: column;
+                text-align: center;
+                padding: 40px 30px;
+            }
+            
+            .hero p {
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .mobile-menu-toggle {
+                display: block;
+            }
+            
+            .hero h1 {
+                font-size: 32px;
+            }
+            
+            .hero p {
+                font-size: 16px;
+            }
+            
+            .section-title h2 {
+                font-size: 28px;
+            }
+            
+            .cta-section h2 {
+                font-size: 28px;
+            }
+            
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .hero {
+                padding: 30px 20px;
+                margin: 40px 0;
+            }
+            
+            .hero h1 {
+                font-size: 28px;
+            }
+            
+            .card {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部导航栏 -->
+        <header class="top-nav">
+            <a href="index.html" class="logo">
+                <span class="mark">宅</span>
+                <span class="name">宅学苑</span>
+            </a>
+            
+            <nav class="nav-links">
+                <a href="index.html" class="active">首页</a>
+                <a href="notes.html">中文笔记</a>
+                <a href="video.html">视频学习</a>
+                <a href="practice.html">强化练习</a>
+                <a href="exam.html">真题模拟</a>
+                <a href="community.html">学习社群</a>
+                <a href="dashboard.html">学习仪表盘</a> 
+                <a href="login.html">登录 / 注册</a>
+            </nav>
+            
+            <button class="mobile-menu-toggle" id="mobileMenuToggle">☰</button>
+        </header>
+
+        <!-- 主标题区 -->
+        <section class="hero">
+            <div class="hero-content">
+                <h1>日本宅建士考试<br>中文学习平台</h1>
+                <p>专为中文学习者设计的日本宅建士考试备考平台，提供系统化的学习资料、练习题库和备考社区，助您高效通过考试。</p>
+                <div class="cta-buttons">
+                    <a href="notes.html" class="btn btn-primary">开始学习</a>
+                    <a href="about.html" class="btn btn-secondary">了解详情</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <svg class="hero-svg" width="300" height="240" viewBox="0 0 300 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="20" y="40" width="260" height="160" rx="15" fill="white" stroke="#e2e8f0" stroke-width="2"/>
+                    <rect x="40" y="70" width="220" height="12" rx="6" fill="#e2e8f0"/>
+                    <rect x="40" y="100" width="160" height="8" rx="4" fill="#e2e8f0"/>
+                    <rect x="40" y="120" width="180" height="8" rx="4" fill="#e2e8f0"/>
+                    <rect x="40" y="140" width="140" height="8" rx="4" fill="#e2e8f0"/>
+                    <circle cx="70" cy="180" r="20" fill="#2a7960" opacity="0.1"/>
+                    <path d="M65 175 L75 185 L85 170" stroke="#2a7960" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                </svg>
+            </div>
+        </section>
+
+        <!-- 功能卡片区 -->
+        <div class="section-title">
+            <h2>核心学习功能</h2>
+            <p>系统化的学习路径，帮助您高效备考日本宅建士考试</p>
+        </div>
+        
+        <section class="cards">
+            <a href="notes-agent.html" class="card-link">
+                <article class="card">
+                    <div class="card-icon">📚</div>
+                    <div class="title">中文笔记</div>
+                    <div class="desc">基于中文理解宅建考试内容，系统化的知识梳理与重点解析，帮助您快速掌握考试要点。</div>
+                </article>
+            </a>
+            
+            <a href="practice.html" class="card-link">
+                <article class="card">
+                    <div class="card-icon">🎯</div>
+                    <div class="title">强化练习</div>
+                    <div class="desc">针对性练习系统，根据您的学习进度和薄弱环节智能推荐练习题，巩固知识点。</div>
+                </article>
+            </a>
+            
+            <a href="exam.html" class="card-link">
+                <article class="card">
+                    <div class="card-icon">📝</div>
+                    <div class="title">真题模拟</div>
+                    <div class="desc">历年真题与模拟考试，真实考试环境模拟，帮助您熟悉考试形式并检验学习成果。</div>
+                </article>
+            </a>
+            
+            <a href="community.html" class="card-link">
+                <article class="card">
+                    <div class="card-icon">👥</div>
+                    <div class="title">学习社群</div>
+                    <div class="desc">与同学交流学习心得，分享备考经验，互相鼓励支持，让备考之路不再孤单。</div>
+                </article>
+            </a>
+        </section>
+
+        <!-- 底部行动号召 -->
+        <section class="cta-section">
+            <h2>立即开始您的宅建士备考之旅</h2>
+            <p>加入数千名正在备考的学习者，系统化学习，高效备考，顺利通过日本宅建士考试</p>
+            <div class="cta-buttons">
+                <a href="register.html" class="btn btn-primary">免费注册</a>
+                <a href="about.html" class="btn btn-secondary">了解更多</a>
+            </div>
+        </section>
+
+        <!-- 页脚 -->
+        <footer class="footer">
+            <p>© 2025 宅学苑 - 日本宅建士考试中文学习平台 | 专注·专业·高效</p>
+        </footer>
+    </div>
+
+    <script>
+        // 移动端菜单切换
+        document.getElementById('mobileMenuToggle').addEventListener('click', function() {
+            const navLinks = document.querySelector('.nav-links');
+            navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
+        });
+
+        // 响应式调整
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                document.querySelector('.nav-links').style.display = 'flex';
+            } else {
+                document.querySelector('.nav-links').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

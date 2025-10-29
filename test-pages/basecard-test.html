@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BaseCard 组件测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        h2 {
+            font-size: 1.8rem;
+            margin: 40px 0 20px;
+            color: #2c3e50;
+            border-bottom: 2px solid #eaeaea;
+            padding-bottom: 10px;
+        }
+        
+        h3 {
+            font-size: 1.4rem;
+            margin: 30px 0 15px;
+            color: #3498db;
+        }
+        
+        p {
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+        
+        .card-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-header {
+            padding: 25px 25px 15px;
+            display: flex;
+            align-items: flex-start;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            background: #3498db;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .card-description {
+            font-size: 1rem;
+            color: #7f8c8d;
+        }
+        
+        .card-content {
+            padding: 25px;
+            font-size: 1.05rem;
+            line-height: 1.7;
+        }
+        
+        .card-footer {
+            padding: 20px 25px;
+            background: #f8f9fa;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-cancel {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn-cancel:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+        
+        .card.bordered {
+            border: 2px solid #3498db;
+        }
+        
+        .card.filled {
+            background: #e8f4fc;
+        }
+        
+        .card.filled .card-footer {
+            background: #d4eaf7;
+        }
+        
+        .divider {
+            height: 2px;
+            background: linear-gradient(to right, transparent, #3498db, transparent);
+            margin: 40px 0;
+        }
+        
+        .section {
+            margin-bottom: 50px;
+        }
+        
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .card-container {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .card-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .card-icon {
+                margin-right: 0;
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>BaseCard 组件测试</h1>
+        <p>验证 BaseCard 组件是否正常工作</p>
+    </header>
+    
+    <div class="section">
+        <h2>基础卡片测试</h2>
+        <p>这是一个基础卡片的测试，包含标题、描述和图标。</p>
+        
+        <div class="card-container">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">C</div>
+                    <div>
+                        <div class="card-title">基础卡片</div>
+                        <div class="card-description">包含标题、描述和图标</div>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p>这是卡片的内容区域，可以放置任意内容。</p>
+                    <p>卡片组件是UI设计中的基本构建块，用于组织和展示相关信息。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>带底部操作</h2>
+        <p>这个卡片包含底部操作区域。</p>
+        
+        <div class="card-container">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">A</div>
+                    <div>
+                        <div class="card-title">带操作的卡片</div>
+                        <div class="card-description">包含底部操作按钮</div>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p>这个卡片包含底部操作区域，用户可以执行相关操作。</p>
+                    <p>操作区域通常包含确认、取消或其他相关按钮。</p>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-cancel">取消</button>
+                </div>
+            </div>
+        </div>
+        
+        <h3>边框变体</h3>
+        <p>使用 bordered 变体的卡片</p>
+        
+        <div class="card-container">
+            <div class="card bordered">
+                <div class="card-header">
+                    <div class="card-icon">B</div>
+                    <div>
+                        <div class="card-title">边框变体卡片</div>
+                        <div class="card-description">使用 bordered 变体</div>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p>这个卡片使用边框样式。</p>
+                    <p>边框变体通过添加明显的边框来强调卡片边界，适用于需要突出显示的场景。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="divider"></div>
+    
+    <div class="section">
+        <h3>填充变体</h3>
+        <p>使用 filled 变体的卡片</p>
+        
+        <div class="card-container">
+            <div class="card filled">
+                <div class="card-header">
+                    <div class="card-icon">F</div>
+                    <div>
+                        <div class="card-title">填充变体卡片</div>
+                        <div class="card-description">使用 filled 变体</div>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <p>这个卡片使用填充背景。</p>
+                    <p>填充变体通过背景色与其他内容区分，适用于需要视觉强调的场景。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>使用说明</h2>
+        <div class="code-block">
+// BaseCard 组件基本用法<br>
+&lt;BaseCard<br>
+&nbsp;&nbsp;title="卡片标题"<br>
+&nbsp;&nbsp;description="卡片描述"<br>
+&nbsp;&nbsp;variant="default" // bordered | filled<br>
+&nbsp;&nbsp;showFooter={false}<br>
+&gt;<br>
+&nbsp;&nbsp;&lt;div&gt;卡片内容&lt;/div&gt;<br>
+&lt;/BaseCard&gt;
+        </div>
+    </div>
+
+    <script>
+        // 添加交互效果
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.card');
+            const cancelBtn = document.querySelector('.btn-cancel');
+            
+            // 卡片点击效果
+            cards.forEach(card => {
+                card.addEventListener('click', function(e) {
+                    // 防止按钮点击触发卡片点击效果
+                    if (e.target.classList.contains('btn')) return;
+                    
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 200);
+                });
+            });
+            
+            // 取消按钮点击事件
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    alert('取消操作已触发！');
+                });
+            }
+            
+            // 添加加载动画
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 200);
+            });
+        });
+    </script>
+</body>
+</html>

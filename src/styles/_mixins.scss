@@ -1,0 +1,40 @@
+// 响应式 mixins
+@mixin mobile {
+  @media (max-width: 768px) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (max-width: 1024px) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: 1025px) {
+    @content;
+  }
+}
+
+// 弹性布局 mixins
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// 卡片阴影 mixins
+@mixin card-shadow {
+  box-shadow: 0 4px 12px rgba(12, 35, 50, 0.06);
+}
+
+@mixin card-shadow-hover {
+  box-shadow: 0 12px 30px rgba(12, 35, 50, 0.12);
+}
