@@ -268,7 +268,7 @@ const routes = [
 },
 {
   path: '/notes/rights/prescription',
-  name: ':Prescription',
+  name: 'Prescription',
   component: () => import('@/views/notes/rights/Prescription.vue'),
   meta: {
     title: '时效 - 宅学苑',
@@ -278,7 +278,7 @@ const routes = [
 },
 {
   path: '/notes/rights/agency',
-  name: ':Agency',
+  name: 'Agency',
   component: () => import('@/views/notes/rights/Agency.vue'),
   meta: {
     title: '代理 - 宅学苑',
@@ -288,7 +288,7 @@ const routes = [
 },
 {
   path: '/notes/rights/debt-performance',
-  name: ':DebtPerformance',
+  name: 'DebtPerformance',
   component: () => import('@/views/notes/rights/DebtPerformance.vue'),
   meta: {
     title: '债务不履行与弁济 - 宅学苑',
@@ -298,7 +298,7 @@ const routes = [
 },
 {
   path: '/notes/rights/contract-inappropriateness',
-  name: ':ContractInappropriateness',
+  name: 'ContractInappropriateness',
   component: () => import('@/views/notes/rights/ContractInappropriateness.vue'),
   meta: {
     title: '契约不适合责任 - 宅学苑',
@@ -308,7 +308,7 @@ const routes = [
 },
 {
   path: '/notes/rights/succession',
-  name: ':Succession',
+  name: 'Succession',
   component: () => import('@/views/notes/rights/Succession.vue'),
   meta: {
     title: '相続 - 宅学苑',
@@ -318,7 +318,7 @@ const routes = [
 },
 {
   path: '/notes/rights/property-change',
-  name: ':PropertyChange',
+  name: 'PropertyChange',
   component: () => import('@/views/notes/rights/PropertyChange.vue'),
   meta: {
     title: '物权变动 - 宅学苑',
@@ -328,7 +328,7 @@ const routes = [
 },
 {
   path: '/notes/rights/real-estate-registration',
-  name: ':RealEstateRegistration',
+  name: 'RealEstateRegistration',
   component: () => import('@/views/notes/rights/RealEstateRegistration.vue'),
   meta: {
     title: '不动产登记法 - 宅学苑',
@@ -338,7 +338,7 @@ const routes = [
 },
 {
   path: '/notes/rights/mortgage',
-  name: ':Mortgage',
+  name: 'Mortgage',
   component: () => import('@/views/notes/rights/Mortgage.vue'),
   meta: {
     title: '抵当权 - 宅学苑',
@@ -348,7 +348,7 @@ const routes = [
 },
 {
   path: '/notes/rights/guarantee-and-joint-debt',
-  name: ':GuaranteeAndJointDebt',
+  name: 'GuaranteeAndJointDebt',
   component: () => import('@/views/notes/rights/GuaranteeAndJointDebt.vue'),
   meta: {
     title: '保证与连带债务 - 宅学苑',
@@ -358,7 +358,7 @@ const routes = [
 },
 {
   path: '/notes/rights/co-ownership',
-  name: ':CoOwnership',
+  name: 'CoOwnership',
   component: () => import('@/views/notes/rights/CoOwnership.vue'),
   meta: {
     title: '共有 - 宅学苑',
@@ -368,7 +368,7 @@ const routes = [
 },
 {
   path: '/notes/rights/condominium-ownership',
-  name: ':CondominiumOwnership',
+  name: 'CondominiumOwnership',
   component: () => import('@/views/notes/rights/CondominiumOwnership.vue'),
   meta: {
     title: '建物区分所有法 - 宅学苑',
@@ -378,7 +378,7 @@ const routes = [
 },
 {
   path: '/notes/rights/lease',
-  name: ':Lease',
+  name: 'Lease',
   component: () => import('@/views/notes/rights/Lease.vue'),
   meta: {
     title: '赁贷借 - 宅学苑',
@@ -388,7 +388,7 @@ const routes = [
 },
 {
   path: '/notes/rights/land-and-house-rental',
-  name: ':LandAndHouseRental',
+  name: 'LandAndHouseRental',
   component: () => import('@/views/notes/rights/LandAndHouseRental.vue'),
   meta: {
     title: '借地借家法（借家） - 宅学苑',
@@ -398,7 +398,7 @@ const routes = [
 },
 {
   path: '/notes/rights/land-lease',
-  name: ':LandLease',
+  name: 'LandLease',
   component: () => import('@/views/notes/rights/LandLease.vue'),
   meta: {
     title: '借地借家法（借地） - 宅学苑',
@@ -408,7 +408,7 @@ const routes = [
 },
 {
   path: '/notes/rights/tort',
-  name: ':Tort',
+  name: 'Tort',
   component: () => import('@/views/notes/rights/Tort.vue'),
   meta: {
     title: '不法行为 - 宅学苑',
@@ -418,7 +418,7 @@ const routes = [
 },
 {
   path: '/notes/rights/contract-work',
-  name: ':Contractwork',
+  name: 'Contractwork',
   component: () => import('@/views/notes/rights/ContractWork.vue'),
   meta: {
     title: '请负 - 宅学苑',
@@ -428,7 +428,7 @@ const routes = [
 },
 {
   path: '/notes/rights/assignment-of-claim',
-  name: ':Assignmentofclaim',
+  name: 'Assignmentofclaim',
   component: () => import('@/views/notes/rights/AssignmentOfClaim.vue'),
   meta: {
     title: '债权让渡 - 宅学苑',
@@ -438,7 +438,7 @@ const routes = [
 },
 {
   path: '/notes/rights/adjacent-relations',
-  name: ':AdjacentRelations',
+  name: 'AdjacentRelations',
   component: () => import('@/views/notes/rights/AdjacentRelations.vue'),
   meta: {
     title: '相邻关系 - 宅学苑',
@@ -448,7 +448,7 @@ const routes = [
 },
 {
   path: '/notes/rights/risk-burden',
-  name: ':RiskBurden',
+  name: 'RiskBurden',
   component: () => import('@/views/notes/rights/RiskBurden.vue'),
   meta: {
     title: '危险负担 - 宅学苑',
@@ -458,7 +458,7 @@ const routes = [
 },
 {
   path: '/notes/rights/payment-and-setoff',
-  name: ':PaymentAndSetoff',
+  name: 'PaymentAndSetoff',
   component: () => import('@/views/notes/rights/PaymentAndSetoff.vue'),
   meta: {
     requiresAuth: false,
@@ -467,7 +467,7 @@ const routes = [
 },
 {
   path: '/notes/rights/other-important-matters',
-  name: ':OtherImportantMatters',
+  name: 'OtherImportantMatters',
   component: () => import('@/views/notes/rights/OtherImportantMatters.vue'),
   meta: {
     requiresAuth: false,
