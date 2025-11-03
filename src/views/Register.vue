@@ -1,26 +1,13 @@
 <template>
   <div class="register">
     <div class="container">
-      <!-- 顶部导航栏 - 集成用户状态 -->
-      <header class="top-nav">
-        <router-link to="/" class="logo">
-          <span class="mark">宅</span>
-          <span class="name">宅学苑</span>
-        </router-link>
-        
-        <nav class="nav-links" :class="{ 'mobile-show': mobileMenuOpen }">
-          <router-link to="/">首页</router-link>
-          <router-link to="/notes">中文笔记</router-link>
-          <router-link to="/video">视频学习</router-link>
-          <router-link to="/practice">强化练习</router-link>
-          <router-link to="/exam">真题模拟</router-link>
-          <router-link to="/community">学习社群</router-link>
-          <router-link to="/dashboard">学习仪表盘</router-link>
-          <router-link to="/login">登录</router-link>
-        </nav>
-        
-        <button class="mobile-menu-toggle" @click="toggleMobileMenu">☰</button>
-      </header>
+      <!-- 页面头部 -->
+      <div class="page-header">
+        <div class="header-content">
+          <h1>注册账户</h1>
+          <p>开启您的宅建士考试学习之旅</p>
+        </div>
+      </div>
 
       <!-- 注册表单 -->
       <div class="auth-container">
@@ -203,368 +190,321 @@
         </div>
       </div>
 
-      <!-- 页脚 -->
-      <footer class="footer">
-        <p>© 2025 宅学苑 - 日本宅建士考试中文学习平台 | 专注·专业·高效</p>
-      </footer>
+      <!-- 底部行动号召 -->
+      <section class="cta-section">
+        <div class="cta-content">
+          <h2>立即开始您的学习之旅</h2>
+          <p>加入数千名正在备考日本宅建士考试的学习者，获得个性化的学习体验</p>
+          <div class="cta-buttons">
+            <router-link to="/notes" class="btn btn-primary">浏览学习资料</router-link>
+            <router-link to="/practice" class="btn btn-secondary">开始练习</router-link>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 </template>
 
-<script>
-import { useUserStore } from '@/stores/user'
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
-export default {
-  name: 'Register',
-  setup() {
-    const userStore = useUserStore()
-    return { userStore }
-  },
-  data() {
-    return {
-      mobileMenuOpen: false,
-      showPassword: false,
-      showConfirmPassword: false,
-      loading: false,
-      registered: false,
-      selectedSubscription: 'free',
-      form: {
-        name: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-        agreement: false
-      },
-      errors: {
-        name: '',
-        email: '',
-        password: '',
-        confirmPassword: ''
-      },
-      passwordStrength: ''
-    }
-  },
-  computed: {
-    passwordStrengthClass() {
-      return {
-        'strength-weak': this.passwordStrength === 'weak',
-        'strength-medium': this.passwordStrength === 'medium', 
-        'strength-strong': this.passwordStrength === 'strong'
-      }
-    },
-    passwordStrengthText() {
-      const texts = {
-        weak: '密码强度：弱',
-        medium: '密码强度：中',
-        strong: '密码强度：强'
-      }
-      return texts[this.passwordStrength] || ''
-    }
-  },
-  methods: {
-    toggleMobileMenu() {
-      this.mobileMenuOpen = !this.mobileMenuOpen
-    },
-    handleResize() {
-      if (window.innerWidth > 768) {
-        this.mobileMenuOpen = false
-      }
-    },
-    togglePassword() {
-      this.showPassword = !this.showPassword
-    },
-    toggleConfirmPassword() {
-      this.showConfirmPassword = !this.showConfirmPassword
-    },
-    validateName() {
-      const name = this.form.name.trim()
-      
-      if (!name) {
-        this.errors.name = '请输入您的姓名'
-        return false
-      } else if (name.length < 2) {
-        this.errors.name = '姓名至少需要2个字符'
-        return false
-      } else {
-        this.errors.name = ''
-        return true
-      }
-    },
-    validateEmail() {
-      const email = this.form.email.trim()
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      
-      if (!email) {
-        this.errors.email = '请输入邮箱地址'
-        return false
-      } else if (!emailRegex.test(email)) {
-        this.errors.email = '请输入有效的邮箱地址'
-        return false
-      } else {
-        // 检查邮箱是否已被注册
-        if (this.isEmailRegistered(email)) {
-          this.errors.email = '该邮箱已被注册，请使用其他邮箱或尝试登录'
-          return false
-        }
-        
-        this.errors.email = ''
-        return true
-      }
-    },
-    validatePassword() {
-      const password = this.form.password
-      
-      if (!password) {
-        this.errors.password = '请输入密码'
-        return false
-      } else if (password.length < 8) {
-        this.errors.password = '密码至少需要8位字符'
-        return false
-      } else {
-        this.errors.password = ''
-        return true
-      }
-    },
-    validateConfirmPassword() {
-      const password = this.form.password
-      const confirmPassword = this.form.confirmPassword
-      
-      if (!confirmPassword) {
-        this.errors.confirmPassword = '请确认密码'
-        return false
-      } else if (password !== confirmPassword) {
-        this.errors.confirmPassword = '两次输入的密码不一致'
-        return false
-      } else {
-        this.errors.confirmPassword = ''
-        return true
-      }
-    },
-    handlePasswordInput() {
-      this.validatePassword()
-      this.checkPasswordStrength(this.form.password)
-    },
-    checkPasswordStrength(password) {
-      if (!password) {
-        this.passwordStrength = ''
-        return
-      }
-      
-      // 简单的密码强度检测
-      let strength = 0
-      
-      // 长度检查
-      if (password.length >= 8) strength++
-      if (password.length >= 12) strength++
-      
-      // 复杂度检查
-      if (/[a-z]/.test(password)) strength++
-      if (/[A-Z]/.test(password)) strength++
-      if (/[0-9]/.test(password)) strength++
-      if (/[^a-zA-Z0-9]/.test(password)) strength++
-      
-      if (strength <= 2) {
-        this.passwordStrength = 'weak'
-      } else if (strength <= 4) {
-        this.passwordStrength = 'medium'
-      } else {
-        this.passwordStrength = 'strong'
-      }
-    },
-    validateForm() {
-      const isNameValid = this.validateName()
-      const isEmailValid = this.validateEmail()
-      const isPasswordValid = this.validatePassword()
-      const isConfirmPasswordValid = this.validateConfirmPassword()
-      const isAgreementChecked = this.form.agreement
-      
-      if (!isAgreementChecked) {
-        alert('请阅读并同意《使用条款》和《隐私政策》')
-        return false
-      }
-      
-      return isNameValid && isEmailValid && isPasswordValid && isConfirmPasswordValid && isAgreementChecked
-    },
-    isEmailRegistered(email) {
-      // 检查本地存储中是否已存在该邮箱
-      const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]')
-      return users.some(user => user.email === email)
-    },
-    saveUserToLocalStorage(userData) {
-      // 获取现有用户列表
-      const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]')
-      
-      // 添加新用户
-      users.push(userData)
-      
-      // 保存回本地存储
-      localStorage.setItem('registeredUsers', JSON.stringify(users))
-    },
-    async handleSubmit() {
-      if (!this.validateForm()) {
-        return
-      }
-      
-      this.loading = true
-      
-      try {
-        // 模拟 API 调用 - 实际项目中替换为真实 API
-        await new Promise(resolve => setTimeout(resolve, 1500))
-        
-        // 创建用户数据
-        const userData = {
-          id: 'user_' + Date.now(),
-          name: this.form.name.trim(),
-          email: this.form.email.trim(),
-          subscriptionTier: this.selectedSubscription,
-          subscriptionExpires: this.selectedSubscription === 'premium' 
-            ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30天后
-            : null,
-          createdAt: new Date().toISOString(),
-          lastLogin: new Date().toISOString()
-        }
-        
-        // 保存用户数据到本地存储
-        this.saveUserToLocalStorage(userData)
-        
-        // 更新用户状态
-        this.userStore.setUser({
-          id: userData.id,
-          name: userData.name,
-          email: userData.email,
-          subscriptionTier: userData.subscriptionTier,
-          isLoggedIn: true
-        })
-        
-        // 注册成功处理
-        this.registered = true
-        
-      } catch (error) {
-        console.error('注册失败:', error)
-        alert('注册失败，请稍后重试。')
-      } finally {
-        this.loading = false
-      }
-    }
-  },
-  mounted() {
-    window.addEventListener('resize', this.handleResize)
-    
-    // 如果用户已登录，重定向到首页
-    if (this.userStore.isLoggedIn) {
-      this.$router.push('/')
-    }
-  },
-  beforeUnmount() {
-    window.removeEventListener('resize', this.handleResize)
+const router = useRouter()
+
+const showPassword = ref(false)
+const showConfirmPassword = ref(false)
+const loading = ref(false)
+const registered = ref(false)
+const selectedSubscription = ref('free')
+
+const form = ref({
+  name: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  agreement: false
+})
+
+const errors = ref({
+  name: '',
+  email: '',
+  password: '',
+  confirmPassword: ''
+})
+
+const passwordStrength = ref('')
+
+// 计算属性
+const passwordStrengthClass = computed(() => {
+  return {
+    'strength-weak': passwordStrength.value === 'weak',
+    'strength-medium': passwordStrength.value === 'medium', 
+    'strength-strong': passwordStrength.value === 'strong'
+  }
+})
+
+const passwordStrengthText = computed(() => {
+  const texts = {
+    weak: '密码强度：弱',
+    medium: '密码强度：中',
+    strong: '密码强度：强'
+  }
+  return texts[passwordStrength.value] || ''
+})
+
+// 方法
+const togglePassword = () => {
+  showPassword.value = !showPassword.value
+}
+
+const toggleConfirmPassword = () => {
+  showConfirmPassword.value = !showConfirmPassword.value
+}
+
+const validateName = () => {
+  const name = form.value.name.trim()
+  
+  if (!name) {
+    errors.value.name = '请输入您的姓名'
+    return false
+  } else if (name.length < 2) {
+    errors.value.name = '姓名至少需要2个字符'
+    return false
+  } else {
+    errors.value.name = ''
+    return true
   }
 }
+
+const validateEmail = () => {
+  const email = form.value.email.trim()
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  
+  if (!email) {
+    errors.value.email = '请输入邮箱地址'
+    return false
+  } else if (!emailRegex.test(email)) {
+    errors.value.email = '请输入有效的邮箱地址'
+    return false
+  } else {
+    // 检查邮箱是否已被注册
+    if (isEmailRegistered(email)) {
+      errors.value.email = '该邮箱已被注册，请使用其他邮箱或尝试登录'
+      return false
+    }
+    
+    errors.value.email = ''
+    return true
+  }
+}
+
+const validatePassword = () => {
+  const password = form.value.password
+  
+  if (!password) {
+    errors.value.password = '请输入密码'
+    return false
+  } else if (password.length < 8) {
+    errors.value.password = '密码至少需要8位字符'
+    return false
+  } else {
+    errors.value.password = ''
+    return true
+  }
+}
+
+const validateConfirmPassword = () => {
+  const password = form.value.password
+  const confirmPassword = form.value.confirmPassword
+  
+  if (!confirmPassword) {
+    errors.value.confirmPassword = '请确认密码'
+    return false
+  } else if (password !== confirmPassword) {
+    errors.value.confirmPassword = '两次输入的密码不一致'
+    return false
+  } else {
+    errors.value.confirmPassword = ''
+    return true
+  }
+}
+
+const handlePasswordInput = () => {
+  validatePassword()
+  checkPasswordStrength(form.value.password)
+}
+
+const checkPasswordStrength = (password) => {
+  if (!password) {
+    passwordStrength.value = ''
+    return
+  }
+  
+  // 简单的密码强度检测
+  let strength = 0
+  
+  // 长度检查
+  if (password.length >= 8) strength++
+  if (password.length >= 12) strength++
+  
+  // 复杂度检查
+  if (/[a-z]/.test(password)) strength++
+  if (/[A-Z]/.test(password)) strength++
+  if (/[0-9]/.test(password)) strength++
+  if (/[^a-zA-Z0-9]/.test(password)) strength++
+  
+  if (strength <= 2) {
+    passwordStrength.value = 'weak'
+  } else if (strength <= 4) {
+    passwordStrength.value = 'medium'
+  } else {
+    passwordStrength.value = 'strong'
+  }
+}
+
+const validateForm = () => {
+  const isNameValid = validateName()
+  const isEmailValid = validateEmail()
+  const isPasswordValid = validatePassword()
+  const isConfirmPasswordValid = validateConfirmPassword()
+  const isAgreementChecked = form.value.agreement
+  
+  if (!isAgreementChecked) {
+    alert('请阅读并同意《使用条款》和《隐私政策》')
+    return false
+  }
+  
+  return isNameValid && isEmailValid && isPasswordValid && isConfirmPasswordValid && isAgreementChecked
+}
+
+const isEmailRegistered = (email) => {
+  // 检查本地存储中是否已存在该邮箱
+  const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]')
+  return users.some(user => user.email === email)
+}
+
+const saveUserToLocalStorage = (userData) => {
+  // 获取现有用户列表
+  const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]')
+  
+  // 添加新用户
+  users.push(userData)
+  
+  // 保存回本地存储
+  localStorage.setItem('registeredUsers', JSON.stringify(users))
+}
+
+const handleSubmit = async () => {
+  if (!validateForm()) {
+    return
+  }
+  
+  loading.value = true
+  
+  try {
+    // 模拟 API 调用 - 实际项目中替换为真实 API
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    // 创建用户数据
+    const userData = {
+      id: 'user_' + Date.now(),
+      name: form.value.name.trim(),
+      email: form.value.email.trim(),
+      password: form.value.password, // 实际项目中应该加密存储
+      subscriptionTier: selectedSubscription.value,
+      subscriptionExpires: selectedSubscription.value === 'premium' 
+        ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30天后
+        : null,
+      createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString()
+    }
+    
+    // 保存用户数据到本地存储
+    saveUserToLocalStorage(userData)
+    
+    // 保存登录状态
+    localStorage.setItem('currentUser', JSON.stringify({
+      id: userData.id,
+      name: userData.name,
+      email: userData.email,
+      subscriptionTier: userData.subscriptionTier,
+      isLoggedIn: true
+    }))
+    
+    // 注册成功处理
+    registered.value = true
+    
+  } catch (error) {
+    console.error('注册失败:', error)
+    alert('注册失败，请稍后重试。')
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  // 如果用户已登录，重定向到首页
+  const currentUser = localStorage.getItem('currentUser')
+  if (currentUser) {
+    router.push('/')
+  }
+})
 </script>
 
-<style>
-/* CSS 变量定义 */
+<style scoped>
 :root {
   --primary: #2a7960;
-  --primary-dark: #205e4a;
-  --primary-light: #e8f5f0;
-  --bg: #f6f9fc;
+  --primary-dark: #1e5a47;
+  --primary-light: rgba(42, 121, 96, 0.1);
+  --bg: #f8fafc;
   --card-bg: #ffffff;
-  --text: #0b2130;
-  --muted: #64748b;
   --border: #e2e8f0;
+  --text: #334155;
+  --muted: #64748b;
   --radius: 12px;
-  --gap: 20px;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --max-width: 1200px;
   --container-padding: 20px;
-  --error: #e53e3e;
-  --success: #38a169;
+  --error: #ef4444;
+  --success: #10b981;
   --premium: #f59e0b;
 }
-</style>
 
-<style scoped>
 .register {
   min-height: 100vh;
   background-color: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans GB", "PingFang SC", "Microsoft YaHei", "Noto Sans JP", "Noto Sans", Arial, sans-serif;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  padding-top: 20px;
 }
 
-/* ========= 布局容器 ========= */
 .container {
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 0 var(--container-padding);
 }
 
-/* ========= 导航栏 ========= */
-.top-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 0;
+/* ========= 页面头部 ========= */
+.page-header {
+  background: linear-gradient(135deg, rgba(42, 121, 96, 0.05), rgba(42, 121, 96, 0.02));
+  border-radius: var(--radius);
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
 }
 
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  color: var(--primary-dark);
-  text-decoration: none;
-  font-size: 18px;
-}
-
-.logo .mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
+.header-content h1 {
+  font-size: 2.5rem;
   font-weight: 800;
-  font-size: 16px;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.nav-links a {
-  color: var(--muted);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 15px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.nav-links a:hover, .nav-links a.active {
-  background: var(--primary-light);
   color: var(--primary-dark);
+  margin-bottom: 1rem;
 }
 
-.nav-links a.active {
-  font-weight: 700;
-}
-
-.mobile-menu-toggle {
-  display: none;
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
+.header-content p {
+  font-size: 1.125rem;
   color: var(--muted);
-  padding: 8px;
-  border-radius: 8px;
+  max-width: 700px;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
 }
 
 /* ========= 注册表单 ========= */
@@ -572,7 +512,6 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 70vh;
   padding: 40px 0;
 }
 
@@ -582,7 +521,7 @@ export default {
   padding: 50px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
   width: 100%;
-  max-width: 500px;
+  max-width: 600px;
 }
 
 .auth-header {
@@ -611,13 +550,13 @@ export default {
 
 /* ========= 会员类型选择 ========= */
 .subscription-options {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
   margin-bottom: 10px;
 }
 
 .subscription-option {
-  flex: 1;
   border: 2px solid var(--border);
   border-radius: 12px;
   padding: 20px;
@@ -742,7 +681,7 @@ export default {
 
 .form-input.error:focus {
   border-color: var(--error);
-  box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
 .password-toggle {
@@ -908,39 +847,49 @@ export default {
   padding-top: 20px;
 }
 
-/* ========= 页脚 ========= */
-.footer {
+/* ========= 底部行动号召 ========= */
+.cta-section {
   text-align: center;
   padding: 40px 0;
-  margin-top: 60px;
-  border-top: 1px solid var(--border);
+  margin: 60px 0 40px;
+}
+
+.cta-section h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-bottom: 16px;
+}
+
+.cta-section p {
+  font-size: 16px;
   color: var(--muted);
-  font-size: 14px;
+  margin-bottom: 24px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+
+.cta-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 /* ========= 响应式设计 ========= */
 @media (max-width: 768px) {
-  .nav-links {
-    display: none;
-    position: absolute;
-    top: 70px;
-    left: 0;
-    right: 0;
-    background: white;
-    flex-direction: column;
-    padding: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    border-radius: 12px;
-    margin: 0 20px;
-    z-index: 100;
+  .page-header {
+    padding: 2rem 1rem;
   }
   
-  .nav-links.mobile-show {
-    display: flex;
+  .header-content h1 {
+    font-size: 2rem;
   }
   
-  .mobile-menu-toggle {
-    display: block;
+  .header-content p {
+    font-size: 1rem;
   }
   
   .auth-card {
@@ -952,7 +901,7 @@ export default {
   }
   
   .subscription-options {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
   
   .form-row {
@@ -961,6 +910,16 @@ export default {
   
   .success-actions {
     flex-direction: column;
+  }
+  
+  .cta-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .btn {
+    width: 100%;
+    max-width: 300px;
   }
 }
 

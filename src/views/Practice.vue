@@ -1,39 +1,7 @@
+<!-- src/views/Practice.vue -->
 <template>
   <div class="practice">
     <div class="container">
-      <!-- 顶部导航栏 - 集成用户状态 -->
-      <header class="top-nav">
-        <router-link to="/" class="logo">
-          <span class="mark">宅</span>
-          <span class="name">宅学苑</span>
-        </router-link>
-        
-        <nav class="nav-links" :class="{ 'mobile-show': mobileMenuOpen }">
-          <router-link to="/">首页</router-link>
-          <router-link to="/notes">中文笔记</router-link>
-          <router-link to="/video">视频学习</router-link>
-          <router-link to="/practice" class="active">强化练习</router-link>
-          <router-link to="/exam">真题模拟</router-link>
-          <router-link to="/community">学习社群</router-link>
-          <router-link to="/dashboard">学习进度</router-link>
-          
-          <!-- 用户状态显示 -->
-          <div class="user-status" v-if="userStore.isLoggedIn">
-            <span class="user-avatar">👤</span>
-            <span class="user-info">
-              <span class="user-name">{{ userStore.userName }}</span>
-              <span class="user-tier">{{ userStore.subscriptionTier === 'premium' ? 'VIP会员' : '免费会员' }}</span>
-            </span>
-          </div>
-          <router-link v-else to="/login" class="login-link">
-            <span class="user-avatar">👤</span>
-            <span>访客登录</span>
-          </router-link>
-        </nav>
-        
-        <button class="mobile-menu-toggle" @click="toggleMobileMenu">☰</button>
-      </header>
-
       <!-- 页面头部 -->
       <div class="page-header">
         <div class="header-content">
@@ -43,7 +11,7 @@
           <!-- VIP用户专属提示 -->
           <div v-if="userStore.isPremium" class="premium-badge">
             <span class="badge-icon">⭐</span>
-    <span>VIP会员可享受无限制练习和详细分析报告</span>
+            <span>VIP会员可享受无限制练习和详细分析报告</span>
           </div>
           
           <div class="header-stats">
@@ -212,15 +180,17 @@
 
           <div class="questions-grid">
             <div 
-              v-for="question in getDomainQuestions(activeDomain)" 
+              v-for="(question, index) in getDomainQuestions(activeDomain)" 
               :key="question.id"
               class="question-card"
               :class="{ 
                 'answered': question.userAnswer,
                 'correct': question.userAnswer && question.userAnswer === question.correctAnswer,
                 'incorrect': question.userAnswer && question.userAnswer !== question.correctAnswer,
-                'premium-only': question.requiresPremium && !userStore.isPremium
+                'premium-only': question.requiresPremium && !userStore.isPremium,
+                'active': activeQuestionIndex === index
               }"
+              @click="setActiveQuestion(index)"
             >
               <!-- VIP专属题目标识 -->
               <div v-if="question.requiresPremium && !userStore.isPremium" class="premium-overlay">
@@ -238,7 +208,7 @@
                 <button 
                   class="bookmark-btn"
                   :class="{ bookmarked: question.bookmarked }"
-                  @click="toggleBookmark(question.id)"
+                  @click.stop="toggleBookmark(question.id)"
                 >
                   <span>{{ question.bookmarked ? '★' : '☆' }}</span>
                 </button>
@@ -292,6 +262,7 @@
               <div class="question-footer">
                 <span class="knowledge-point">{{ question.knowledgePoint }}</span>
                 <span class="practice-count">练习 {{ question.practiceCount }} 次</span>
+                <span class="time-spent" v-if="question.timeSpent">用时: {{ question.timeSpent }}秒</span>
                 <span v-if="question.requiresPremium" class="premium-tag">VIP</span>
               </div>
             </div>
@@ -328,8 +299,8 @@
                 <div class="stat-label">当前正确率</div>
               </div>
               <div class="stat-item">
-                <div class="stat-value">{{ practiceTime }}分钟</div>
-                <div class="stat-label">练习时间</div>
+                <div class="stat-value">{{ totalPracticeTime }}分钟</div>
+                <div class="stat-label">总练习时间</div>
               </div>
             </div>
           </div>
@@ -340,7 +311,7 @@
           <div class="prompt-content">
             <h3>登录以保存练习记录</h3>
             <p>登录后可以保存您的练习进度、查看详细分析报告，并获得个性化学习建议</p>
-            <router-link to="/login" class="btn btn-primary">立即登录</router-link>
+            <button class="btn btn-primary" @click="openLoginDialog">立即登录</button>
           </div>
         </section>
 
@@ -369,682 +340,759 @@
           </div>
         </div>
       </section>
-
-      <!-- 页脚 -->
-      <footer class="footer">
-        <p>© 2025 宅学苑 - 日本宅建士考试中文学习平台 | 专注·专业·高效</p>
-      </footer>
     </div>
   </div>
 </template>
 
-<script>
+<script setup>
 import { useUserStore } from '@/stores/user'
+import { useLearningStore } from '@/stores/learning'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
-export default {
-  name: 'Practice',
-  setup() {
-    const userStore = useUserStore()
-    return { userStore }
+const userStore = useUserStore()
+const learningStore = useLearningStore()
+const router = useRouter()
+
+const mobileMenuOpen = ref(false)
+const activeDomain = ref('rights')
+const activeQuestionIndex = ref(0)
+const showAnswers = ref(false)
+const practiceTime = ref(0)
+const practiceTimer = ref(null)
+const questionTimers = ref({})
+const bookmarks = ref(new Set())
+
+// 五大分野数据
+const domains = [
+  { 
+    id: 'rights', 
+    name: '权利关系', 
+    icon: '⚖️', 
+    questionCount: 28,
+    accuracy: 78,
+    requiresPremium: false
   },
-  data() {
-    return {
-      mobileMenuOpen: false,
-      activeDomain: 'rights',
-      showAnswers: false,
-      practiceTime: 0,
-      practiceTimer: null,
-      domains: [
-        { 
-          id: 'rights', 
-          name: '权利关系', 
-          icon: '⚖️', 
-          questionCount: 28,
-          accuracy: 78,
-          requiresPremium: false
-        },
-        { 
-          id: 'business', 
-          name: '宅建业法', 
-          icon: '🏢', 
-          questionCount: 32,
-          accuracy: 82,
-          requiresPremium: false
-        },
-        { 
-          id: 'regulations', 
-          name: '法令制限', 
-          icon: '📏', 
-          questionCount: 35,
-          accuracy: 65,
-          requiresPremium: false
-        },
-        { 
-          id: 'tax', 
-          name: '税・価格', 
-          icon: '💰', 
-          questionCount: 18,
-          accuracy: 71,
-          requiresPremium: false
-        },
-        { 
-          id: 'exempt', 
-          name: '五问免除', 
-          icon: '✅', 
-          questionCount: 12,
-          accuracy: 88,
-          requiresPremium: false
-        },
-        { 
-          id: 'advanced', 
-          name: '高级专题', 
-          icon: '🚀', 
-          questionCount: 25,
-          accuracy: 0,
-          requiresPremium: true
-        }
+  { 
+    id: 'business', 
+    name: '宅建业法', 
+    icon: '🏢', 
+    questionCount: 32,
+    accuracy: 82,
+    requiresPremium: false
+  },
+  { 
+    id: 'regulations', 
+    name: '法令制限', 
+    icon: '📏', 
+    questionCount: 35,
+    accuracy: 65,
+    requiresPremium: false
+  },
+  { 
+    id: 'tax', 
+    name: '税・価格', 
+    icon: '💰', 
+    questionCount: 18,
+    accuracy: 71,
+    requiresPremium: false
+  },
+  { 
+    id: 'exempt', 
+    name: '五问免除', 
+    icon: '✅', 
+    questionCount: 12,
+    accuracy: 88,
+    requiresPremium: false
+  },
+  { 
+    id: 'advanced', 
+    name: '高级专题', 
+    icon: '🚀', 
+    questionCount: 25,
+    accuracy: 0,
+    requiresPremium: true
+  }
+]
+
+// 知识点数据 - 添加计时相关字段
+const questions = ref({
+  rights: [
+    {
+      id: 'q_rights_001',
+      number: 1,
+      text: '重要事項説明書には、代表者の記名があれば宅地建物取引士の記名は必要がない。',
+      options: [
+        { id: 'A', text: '○ (正しい)' },
+        { id: 'B', text: '× (誤り)' }
       ],
-      questions: {
-        rights: [
-          {
-            id: 1,
-            number: 1,
-            text: '重要事項説明書には、代表者の記名があれば宅地建物取引士の記名は必要がない。',
-            options: [
-              { id: 'A', text: '○ (正しい)' },
-              { id: 'B', text: '× (誤り)' }
-            ],
-            correctAnswer: 'B',
-            explanation: '重要事项说明书（35条书面文件）上必须有宅建士的签名，仅有"代表人签名"是不够的。',
-            difficulty: 'medium',
-            knowledgePoint: '重要事项说明',
-            practiceCount: 15,
-            userAnswer: null,
-            bookmarked: false,
-            requiresPremium: false
-          },
-          {
-            id: 2,
-            number: 2,
-            text: '媒介契約において、宅地建物取引業者は、依頼者に対して取引の進捗状況を報告する義務がある。',
-            options: [
-              { id: 'A', text: '○ (正しい)' },
-              { id: 'B', text: '× (誤り)' }
-            ],
-            correctAnswer: 'A',
-            explanation: '根据宅建业法，宅建业者有义务向委托人报告交易进展情况。',
-            difficulty: 'easy',
-            knowledgePoint: '媒介契约',
-            practiceCount: 12,
-            userAnswer: null,
-            bookmarked: true,
-            requiresPremium: false
-          }
-        ],
-        business: [
-          {
-            id: 3,
-            number: 1,
-            text: '宅地建物取引業者は、業務に関して受領した金銭を、自己の金銭と区別して保管しなければならない。',
-            options: [
-              { id: 'A', text: '○ (正しい)' },
-              { id: 'B', text: '× (誤り)' }
-            ],
-            correctAnswer: 'A',
-            explanation: '宅建业者必须将业务相关款项与自有资金分开保管，这是重要的资金管理义务。',
-            difficulty: 'medium',
-            knowledgePoint: '营业保证金',
-            practiceCount: 8,
-            userAnswer: null,
-            bookmarked: false,
-            requiresPremium: false
-          }
-        ],
-        advanced: [
-          {
-            id: 4,
-            number: 1,
-            text: '宅地建物取引業者が自ら売主となる場合、瑕疵担保責任に関する特約を設けることができるが、その内容には一定の制限がある。',
-            options: [
-              { id: 'A', text: '買主に不利な特約は一切認められない' },
-              { id: 'B', text: '買主に不利な特約も一定の範囲で認められる' },
-              { id: 'C', text: '特約の内容に制限はない' },
-              { id: 'D', text: '特約を設けることはできない' }
-            ],
-            correctAnswer: 'B',
-            explanation: '宅建业者作为卖方时，可以设定瑕疵担保责任的特约，但内容有一定限制，不能完全免除责任。',
-            difficulty: 'hard',
-            knowledgePoint: '瑕疵担保责任',
-            practiceCount: 5,
-            userAnswer: null,
-            bookmarked: false,
-            requiresPremium: true
-          }
-        ]
-      },
-      practiceHistory: []
+      correctAnswer: 'B',
+      explanation: '重要事项说明书（35条书面文件）上必须有宅建士的签名，仅有"代表人签名"是不够的。',
+      difficulty: 'medium',
+      knowledgePoint: '重要事项说明',
+      practiceCount: 15,
+      userAnswer: null,
+      bookmarked: false,
+      requiresPremium: false,
+      timeSpent: 0,
+      startTime: null
+    },
+    {
+      id: 'q_rights_002',
+      number: 2,
+      text: '媒介契約において、宅地建物取引業者は、依頼者に対して取引の進捗状況を報告する義務がある。',
+      options: [
+        { id: 'A', text: '○ (正しい)' },
+        { id: 'B', text: '× (誤り)' }
+      ],
+      correctAnswer: 'A',
+      explanation: '根据宅建业法，宅建业者有义务向委托人报告交易进展情况。',
+      difficulty: 'easy',
+      knowledgePoint: '媒介契约',
+      practiceCount: 12,
+      userAnswer: null,
+      bookmarked: true,
+      requiresPremium: false,
+      timeSpent: 0,
+      startTime: null
     }
-  },
-  computed: {
-    totalPracticeQuestions() {
-      return Object.values(this.questions).reduce((total, domainQuestions) => {
-        return total + domainQuestions.length;
-      }, 0);
-    },
-    overallAccuracy() {
-      const totalAccuracy = this.domains.reduce((sum, domain) => sum + domain.accuracy, 0);
-      return Math.round(totalAccuracy / this.domains.length);
-    },
-    totalStudyTime() {
-      return Math.round(this.totalPracticeQuestions * 0.5);
-    },
-    completedQuestions() {
-      return Object.values(this.questions).reduce((total, domainQuestions) => {
-        return total + domainQuestions.filter(q => q.userAnswer).length;
-      }, 0);
-    },
-    totalQuestions() {
-      return Object.values(this.questions).reduce((total, domainQuestions) => {
-        return total + domainQuestions.length;
-      }, 0);
-    },
-    correctAnswers() {
-      return Object.values(this.questions).reduce((total, domainQuestions) => {
-        return total + domainQuestions.filter(q => q.userAnswer === q.correctAnswer).length;
-      }, 0);
-    },
-    currentAccuracy() {
-      if (this.completedQuestions === 0) return 0;
-      return Math.round((this.correctAnswers / this.completedQuestions) * 100);
+  ],
+  business: [
+    {
+      id: 'q_business_001',
+      number: 1,
+      text: '宅地建物取引業者は、業務に関して受領した金銭を、自己の金銭と区別して保管しなければならない。',
+      options: [
+        { id: 'A', text: '○ (正しい)' },
+        { id: 'B', text: '× (誤り)' }
+      ],
+      correctAnswer: 'A',
+      explanation: '宅建业者必须将业务相关款项与自有资金分开保管，这是重要的资金管理义务。',
+      difficulty: 'medium',
+      knowledgePoint: '营业保证金',
+      practiceCount: 8,
+      userAnswer: null,
+      bookmarked: false,
+      requiresPremium: false,
+      timeSpent: 0,
+      startTime: null
     }
-  },
-  methods: {
-    toggleMobileMenu() {
-      this.mobileMenuOpen = !this.mobileMenuOpen;
-    },
-    handleResize() {
-      if (window.innerWidth > 768) {
-        this.mobileMenuOpen = false;
-      }
-    },
-    switchDomain(domainId) {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以开始练习')
-        this.$router.push('/login')
-        return
-      }
-      
-      const domain = this.domains.find(d => d.id === domainId)
-      if (domain.requiresPremium && !this.userStore.isPremium) {
-        alert('此分野需要VIP会员权限，请升级VIP会员')
-        return
-      }
-      
-      this.activeDomain = domainId;
-      this.resetPractice();
-    },
-    getDomainName(domainId) {
-      const domain = this.domains.find(d => d.id === domainId);
-      return domain ? domain.name : '';
-    },
-    getDomainAccuracy(domainId) {
-      const domain = this.domains.find(d => d.id === domainId);
-      return domain ? domain.accuracy : 0;
-    },
-    getDomainQuestions(domainId) {
-      return this.questions[domainId] || [];
-    },
-    getDifficultyText(difficulty) {
-      const difficultyMap = {
-        'easy': '简单',
-        'medium': '中等',
-        'hard': '困难'
-      };
-      return difficultyMap[difficulty] || difficulty;
-    },
-    checkAnswer(question) {
-      if (!this.userStore.isLoggedIn) return
-      
-      // 更新练习次数
-      question.practiceCount++
-      
-      // 保存到本地存储
-      this.savePracticeProgress()
-      
-      console.log('检查答案:', question.userAnswer, '正确答案:', question.correctAnswer);
-    },
-    toggleBookmark(questionId) {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以使用收藏功能')
-        return
-      }
-      
-      Object.values(this.questions).forEach(domainQuestions => {
-        const question = domainQuestions.find(q => q.id === questionId);
-        if (question) {
-          question.bookmarked = !question.bookmarked;
-        }
-      });
-      
-      // 保存到本地存储
-      this.saveBookmarksToLocalStorage()
-    },
-    getCorrectAnswerText(question) {
-      const correctOption = question.options.find(opt => opt.id === question.correctAnswer);
-      return correctOption ? correctOption.text : '';
-    },
-    addToWrongQuestions(question) {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以使用错题本功能')
-        return
-      }
-      
-      // 添加到错题本的逻辑
-      console.log('添加到错题本:', question);
-      alert(`已添加到错题本: ${question.knowledgePoint}`);
-      
-      // 保存到本地存储
-      this.saveWrongQuestionsToLocalStorage(question)
-    },
-    showSimilarQuestions(question) {
-      // 显示相似题目的逻辑
-      console.log('显示相似题目:', question);
-    },
-    resetPractice() {
-      Object.values(this.questions).forEach(domainQuestions => {
-        domainQuestions.forEach(question => {
-          question.userAnswer = null;
-        });
-      });
-      this.showAnswers = false;
-      this.practiceTime = 0;
-    },
-    submitPractice() {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以提交练习')
-        this.$router.push('/login')
-        return
-      }
-      
-      if (this.completedQuestions === 0) {
-        alert('请至少完成一道题目后再提交');
-        return;
-      }
-      
-      const score = this.currentAccuracy;
-      let message = '';
-      
-      if (score >= 80) {
-        message = `优秀！您的正确率为 ${score}%，继续保持！`;
-      } else if (score >= 60) {
-        message = `良好！您的正确率为 ${score}%，还有提升空间！`;
-      } else {
-        message = `需要加强！您的正确率为 ${score}%，建议重点复习相关知识点。`;
-      }
-      
-      // 保存练习记录
-      this.savePracticeRecord(score)
-      
-      alert(`练习提交成功！\n${message}`);
-    },
-    startQuickPractice() {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以开始练习')
-        this.$router.push('/login')
-        return
-      }
-      
-      this.resetPractice();
-      alert('开始快速练习模式');
-    },
-    startDomainPractice() {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以开始练习')
-        this.$router.push('/login')
-        return
-      }
-      
-      this.resetPractice();
-      alert('开始分野专项练习模式');
-    },
-    startTimedPractice() {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以开始练习')
-        this.$router.push('/login')
-        return
-      }
-      
-      this.resetPractice();
-      this.startTimer();
-      alert('开始限时挑战模式 - 计时开始！');
-    },
-    startRandomPractice() {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以开始练习')
-        this.$router.push('/login')
-        return
-      }
-      
-      this.resetPractice();
-      alert('开始随机练习模式');
-    },
-    startWeaknessPractice() {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以开始练习')
-        this.$router.push('/login')
-        return
-      }
-      
-      this.resetPractice();
-      alert('开始弱点练习模式');
-    },
-    startNewPractice() {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以开始练习')
-        this.$router.push('/login')
-        return
-      }
-      
-      this.resetPractice();
-      alert('开始新的练习会话');
-    },
-    startAIPractice() {
-      if (!this.userStore.isPremium) {
-        alert('此功能需要VIP会员权限')
-        return
-      }
-      
-      this.resetPractice();
-      alert('开始AI智能练习模式');
-    },
-    startExamSimulation() {
-      if (!this.userStore.isPremium) {
-        alert('此功能需要VIP会员权限')
-        return
-      }
-      
-      this.resetPractice();
-      alert('开始模拟考试练习模式');
-    },
-    startWeaknessAnalysis() {
-      if (!this.userStore.isPremium) {
-        alert('此功能需要VIP会员权限')
-        return
-      }
-      
-      this.resetPractice();
-      alert('开始弱点分析模式');
-    },
-    upgradeToPremium() {
-      alert('升级VIP会员，享受更多专属功能')
-      // 这里应该跳转到VIP升级页面
-    },
-    startTimer() {
-      if (this.practiceTimer) {
-        clearInterval(this.practiceTimer);
-      }
-      this.practiceTimer = setInterval(() => {
-        this.practiceTime++;
-      }, 60000); // 每分钟更新一次
-    },
-    savePracticeProgress() {
-      const progress = {
-        domains: this.domains,
-        questions: this.questions,
-        lastUpdated: new Date().toISOString()
-      }
-      localStorage.setItem('practiceProgress', JSON.stringify(progress))
-    },
-    loadPracticeProgress() {
-      const savedProgress = localStorage.getItem('practiceProgress')
-      if (savedProgress) {
-        const progress = JSON.parse(savedProgress)
-        this.domains = progress.domains || this.domains
-        this.questions = progress.questions || this.questions
-      }
-    },
-    saveBookmarksToLocalStorage() {
-      const bookmarks = []
-      Object.values(this.questions).forEach(domainQuestions => {
-        domainQuestions.forEach(question => {
-          if (question.bookmarked) {
-            bookmarks.push(question.id)
-          }
-        })
-      })
-      localStorage.setItem('practiceBookmarks', JSON.stringify(bookmarks))
-    },
-    loadBookmarksFromLocalStorage() {
-      const savedBookmarks = localStorage.getItem('practiceBookmarks')
-      if (savedBookmarks) {
-        const bookmarks = JSON.parse(savedBookmarks)
-        Object.values(this.questions).forEach(domainQuestions => {
-          domainQuestions.forEach(question => {
-            question.bookmarked = bookmarks.includes(question.id)
-          })
-        })
-      }
-    },
-    saveWrongQuestionsToLocalStorage(question) {
-      const wrongQuestions = JSON.parse(localStorage.getItem('wrongQuestions') || '[]')
-      if (!wrongQuestions.find(q => q.id === question.id)) {
-        wrongQuestions.push({
-          id: question.id,
-          text: question.text,
-          knowledgePoint: question.knowledgePoint,
-          addedAt: new Date().toISOString()
-        })
-        localStorage.setItem('wrongQuestions', JSON.stringify(wrongQuestions))
-      }
-    },
-    savePracticeRecord(score) {
-      const records = JSON.parse(localStorage.getItem('practiceRecords') || '[]')
-      records.push({
-        domain: this.activeDomain,
-        score: score,
-        completedQuestions: this.completedQuestions,
-        totalQuestions: this.getDomainQuestions(this.activeDomain).length,
-        timeSpent: this.practiceTime,
-        date: new Date().toISOString()
-      })
-      localStorage.setItem('practiceRecords', JSON.stringify(records))
+  ],
+  advanced: [
+    {
+      id: 'q_advanced_001',
+      number: 1,
+      text: '宅地建物取引業者が自ら売主となる場合、瑕疵担保責任に関する特約を設けることができるが、その内容には一定の制限がある。',
+      options: [
+        { id: 'A', text: '買主に不利な特約は一切認められない' },
+        { id: 'B', text: '買主に不利な特約も一定の範囲で認められる' },
+        { id: 'C', text: '特約の内容に制限はない' },
+        { id: 'D', text: '特約を設けることはできない' }
+      ],
+      correctAnswer: 'B',
+      explanation: '宅建业者作为卖方时，可以设定瑕疵担保责任的特约，但内容有一定限制，不能完全免除责任。',
+      difficulty: 'hard',
+      knowledgePoint: '瑕疵担保责任',
+      practiceCount: 5,
+      userAnswer: null,
+      bookmarked: false,
+      requiresPremium: true,
+      timeSpent: 0,
+      startTime: null
     }
-  },
-  mounted() {
-    window.addEventListener('resize', this.handleResize);
-    
-    // 从本地存储加载用户数据
-    this.loadPracticeProgress()
-    this.loadBookmarksFromLocalStorage()
-  },
-  beforeUnmount() {
-    window.removeEventListener('resize', this.handleResize);
-    if (this.practiceTimer) {
-      clearInterval(this.practiceTimer);
-    }
+  ]
+})
+
+// 计算属性
+const totalPracticeQuestions = computed(() => {
+  return Object.values(questions.value).reduce((total, domainQuestions) => {
+    return total + domainQuestions.length;
+  }, 0);
+})
+
+const overallAccuracy = computed(() => {
+  const totalAccuracy = domains.reduce((sum, domain) => sum + domain.accuracy, 0);
+  return Math.round(totalAccuracy / domains.length);
+})
+
+const totalStudyTime = computed(() => {
+  return Math.round(totalPracticeQuestions.value * 0.5);
+})
+
+const completedQuestions = computed(() => {
+  return Object.values(questions.value).reduce((total, domainQuestions) => {
+    return total + domainQuestions.filter(q => q.userAnswer).length;
+  }, 0);
+})
+
+const totalQuestions = computed(() => {
+  return Object.values(questions.value).reduce((total, domainQuestions) => {
+    return total + domainQuestions.length;
+  }, 0);
+})
+
+const correctAnswers = computed(() => {
+  return Object.values(questions.value).reduce((total, domainQuestions) => {
+    return total + domainQuestions.filter(q => q.userAnswer === q.correctAnswer).length;
+  }, 0);
+})
+
+const currentAccuracy = computed(() => {
+  if (completedQuestions.value === 0) return 0;
+  return Math.round((correctAnswers.value / completedQuestions.value) * 100);
+})
+
+const totalPracticeTime = computed(() => {
+  return Object.values(questions.value).reduce((total, domainQuestions) => {
+    return total + domainQuestions.reduce((sum, q) => sum + (q.timeSpent || 0), 0);
+  }, 0) / 60; // 转换为分钟
+})
+
+// 方法
+const switchDomain = (domainId) => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以开始练习')
+    openLoginDialog()
+    return
+  }
+  
+  const domain = domains.find(d => d.id === domainId)
+  if (domain.requiresPremium && !userStore.isPremium) {
+    alert('此分野需要VIP会员权限，请升级VIP会员')
+    return
+  }
+  
+  activeDomain.value = domainId;
+  activeQuestionIndex.value = 0;
+  resetPractice();
+  startQuestionTimer(activeQuestionIndex.value);
+}
+
+const setActiveQuestion = (index) => {
+  // 停止当前题目的计时
+  stopQuestionTimer(activeQuestionIndex.value);
+  
+  // 设置新的活跃题目
+  activeQuestionIndex.value = index;
+  
+  // 开始新题目的计时
+  startQuestionTimer(index);
+}
+
+const startQuestionTimer = (questionIndex) => {
+  const domainQuestions = getDomainQuestions(activeDomain.value);
+  if (domainQuestions[questionIndex]) {
+    domainQuestions[questionIndex].startTime = Date.now();
   }
 }
-</script>
 
-<style>
-/* CSS 变量定义 - 与notes.vue保持一致 */
-:root {
-  --primary: #2a7960;
-  --primary-dark: #205e4a;
-  --primary-light: #e8f5f0;
-  --bg: #f6f9fc;
-  --card-bg: #ffffff;
-  --text: #0b2130;
-  --muted: #64748b;
-  --border: #e2e8f0;
-  --radius: 12px;
-  --gap: 20px;
-  --max-width: 1200px;
-  --container-padding: 20px;
+const stopQuestionTimer = (questionIndex) => {
+  const domainQuestions = getDomainQuestions(activeDomain.value);
+  const question = domainQuestions[questionIndex];
   
-  /* 新增练习相关变量 */
-  --correct: #10b981;
-  --incorrect: #ef4444;
-  --warning: #f59e0b;
-  --easy: #10b981;
-  --medium: #f59e0b;
-  --hard: #ef4444;
-  --premium: #f59e0b;
+  if (question && question.startTime) {
+    const timeSpent = Math.floor((Date.now() - question.startTime) / 1000); // 转换为秒
+    question.timeSpent = (question.timeSpent || 0) + timeSpent;
+    question.startTime = null;
+    
+    // 保存到本地存储
+    savePracticeProgress();
+  }
 }
-</style>
+
+const getDomainName = (domainId) => {
+  const domain = domains.find(d => d.id === domainId);
+  return domain ? domain.name : '';
+}
+
+const getDomainAccuracy = (domainId) => {
+  const domain = domains.find(d => d.id === domainId);
+  return domain ? domain.accuracy : 0;
+}
+
+const getDomainQuestions = (domainId) => {
+  return questions.value[domainId] || [];
+}
+
+const getDifficultyText = (difficulty) => {
+  const difficultyMap = {
+    'easy': '简单',
+    'medium': '中等',
+    'hard': '困难'
+  };
+  return difficultyMap[difficulty] || difficulty;
+}
+
+const checkAnswer = (question) => {
+  if (!userStore.isLoggedIn) return
+  
+  // 停止当前题目的计时
+  const domainQuestions = getDomainQuestions(activeDomain.value);
+  const currentIndex = domainQuestions.findIndex(q => q.id === question.id);
+  if (currentIndex !== -1) {
+    stopQuestionTimer(currentIndex);
+  }
+  
+  // 更新练习次数
+  question.practiceCount++
+  
+  // 保存练习记录 - 对齐项目圣经数据结构
+  savePracticeRecord(question)
+  
+  // 更新学习进度
+  updateLearningProgress(activeDomain.value, question.timeSpent || 0)
+  
+  // 自动切换到下一题
+  setTimeout(() => {
+    const nextIndex = currentIndex + 1;
+    if (nextIndex < domainQuestions.length) {
+      setActiveQuestion(nextIndex);
+    }
+  }, 1000);
+}
+
+const savePracticeRecord = (question) => {
+  if (!userStore.user?.id) return
+  
+  // 对齐项目圣经的 practice_records 表结构
+  const practiceRecord = {
+    userId: userStore.user.id,
+    questionId: question.id,
+    userAnswer: question.userAnswer,
+    isCorrect: question.userAnswer === question.correctAnswer,
+    timeSpent: question.timeSpent || 0,
+    createdAt: new Date().toISOString(),
+    domain: activeDomain.value,
+    knowledgePoint: question.knowledgePoint
+  }
+  
+  // 保存到本地存储 - 使用项目圣经的表名
+  const records = JSON.parse(localStorage.getItem('practice_records') || '[]')
+  
+  // 检查是否已有相同记录，避免重复
+  const existingIndex = records.findIndex(record => 
+    record.userId === practiceRecord.userId && 
+    record.questionId === practiceRecord.questionId &&
+    record.createdAt.slice(0, 16) === practiceRecord.createdAt.slice(0, 16) // 同一天内的记录
+  )
+  
+  if (existingIndex !== -1) {
+    records[existingIndex] = practiceRecord
+  } else {
+    records.push(practiceRecord)
+  }
+  
+  localStorage.setItem('practice_records', JSON.stringify(records))
+  console.log('练习记录已保存:', practiceRecord)
+}
+
+const updateLearningProgress = (domainId, studyTime) => {
+  if (!userStore.user?.id) return
+  
+  // 对齐项目圣经的 learning_progress 表结构
+  const progressRecord = {
+    userId: userStore.user.id,
+    topicId: domainId,
+    status: completedQuestions.value >= totalQuestions.value ? 'completed' : 'in_progress',
+    lastAccessed: new Date().toISOString(),
+    completionPercentage: Math.round((completedQuestions.value / totalQuestions.value) * 100),
+    totalStudyTime: (getDomainStudyTime(domainId) || 0) + studyTime
+  }
+  
+  // 保存到本地存储 - 使用项目圣经的表名
+  const progressData = JSON.parse(localStorage.getItem('learning_progress') || '[]')
+  
+  // 更新或添加进度记录
+  const existingIndex = progressData.findIndex(progress => 
+    progress.userId === progressRecord.userId && progress.topicId === progressRecord.topicId
+  )
+  
+  if (existingIndex !== -1) {
+    progressData[existingIndex] = progressRecord
+  } else {
+    progressData.push(progressRecord)
+  }
+  
+  localStorage.setItem('learning_progress', JSON.stringify(progressData))
+  console.log('学习进度已更新:', progressRecord)
+}
+
+const getDomainStudyTime = (domainId) => {
+  const progressData = JSON.parse(localStorage.getItem('learning_progress') || '[]')
+  const domainProgress = progressData.find(progress => 
+    progress.userId === userStore.user?.id && progress.topicId === domainId
+  )
+  return domainProgress ? domainProgress.totalStudyTime : 0
+}
+
+const toggleBookmark = (questionId) => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以使用收藏功能')
+    openLoginDialog()
+    return
+  }
+  
+  Object.values(questions.value).forEach(domainQuestions => {
+    const question = domainQuestions.find(q => q.id === questionId);
+    if (question) {
+      question.bookmarked = !question.bookmarked;
+    }
+  });
+  
+  // 保存到本地存储
+  saveBookmarksToLocalStorage()
+}
+
+const getCorrectAnswerText = (question) => {
+  const correctOption = question.options.find(opt => opt.id === question.correctAnswer);
+  return correctOption ? correctOption.text : '';
+}
+
+const addToWrongQuestions = (question) => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以使用错题本功能')
+    openLoginDialog()
+    return
+  }
+  
+  // 添加到错题本的逻辑
+  console.log('添加到错题本:', question);
+  alert(`已添加到错题本: ${question.knowledgePoint}`);
+  
+  // 保存到本地存储
+  saveWrongQuestionsToLocalStorage(question)
+}
+
+const showSimilarQuestions = (question) => {
+  // 显示相似题目的逻辑
+  console.log('显示相似题目:', question);
+}
+
+const resetPractice = () => {
+  Object.values(questions.value).forEach(domainQuestions => {
+    domainQuestions.forEach(question => {
+      question.userAnswer = null;
+      question.timeSpent = 0;
+      question.startTime = null;
+    });
+  });
+  showAnswers.value = false;
+  practiceTime.value = 0;
+  activeQuestionIndex.value = 0;
+  
+  // 重置计时器
+  if (practiceTimer.value) {
+    clearInterval(practiceTimer.value);
+    practiceTimer.value = null;
+  }
+}
+
+const submitPractice = () => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以提交练习')
+    openLoginDialog()
+    return
+  }
+  
+  if (completedQuestions.value === 0) {
+    alert('请至少完成一道题目后再提交');
+    return;
+  }
+  
+  // 停止所有题目的计时
+  const domainQuestions = getDomainQuestions(activeDomain.value);
+  domainQuestions.forEach((_, index) => stopQuestionTimer(index));
+  
+  const score = currentAccuracy.value;
+  let message = '';
+  
+  if (score >= 80) {
+    message = `优秀！您的正确率为 ${score}%，继续保持！`;
+  } else if (score >= 60) {
+    message = `良好！您的正确率为 ${score}%，还有提升空间！`;
+  } else {
+    message = `需要加强！您的正确率为 ${score}%，建议重点复习相关知识点。`;
+  }
+  
+  // 保存最终练习记录
+  savePracticeProgress()
+  
+  alert(`练习提交成功！\n${message}`);
+}
+
+const startQuickPractice = () => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以开始练习')
+    openLoginDialog()
+    return
+  }
+  
+  resetPractice();
+  startQuestionTimer(activeQuestionIndex.value);
+  alert('开始快速练习模式');
+}
+
+const startDomainPractice = () => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以开始练习')
+    openLoginDialog()
+    return
+  }
+  
+  resetPractice();
+  startQuestionTimer(activeQuestionIndex.value);
+  alert('开始分野专项练习模式');
+}
+
+const startTimedPractice = () => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以开始练习')
+    openLoginDialog()
+    return
+  }
+  
+  resetPractice();
+  startTimer();
+  startQuestionTimer(activeQuestionIndex.value);
+  alert('开始限时挑战模式 - 计时开始！');
+}
+
+const startRandomPractice = () => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以开始练习')
+    openLoginDialog()
+    return
+  }
+  
+  resetPractice();
+  startQuestionTimer(activeQuestionIndex.value);
+  alert('开始随机练习模式');
+}
+
+const startWeaknessPractice = () => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以开始练习')
+    openLoginDialog()
+    return
+  }
+  
+  resetPractice();
+  startQuestionTimer(activeQuestionIndex.value);
+  alert('开始弱点练习模式');
+}
+
+const startNewPractice = () => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以开始练习')
+    openLoginDialog()
+    return
+  }
+  
+  resetPractice();
+  startQuestionTimer(activeQuestionIndex.value);
+  alert('开始新的练习会话');
+}
+
+const startAIPractice = () => {
+  if (!userStore.isPremium) {
+    alert('此功能需要VIP会员权限')
+    return
+  }
+  
+  resetPractice();
+  startQuestionTimer(activeQuestionIndex.value);
+  alert('开始AI智能练习模式');
+}
+
+const startExamSimulation = () => {
+  if (!userStore.isPremium) {
+    alert('此功能需要VIP会员权限')
+    return
+  }
+  
+  resetPractice();
+  startQuestionTimer(activeQuestionIndex.value);
+  alert('开始模拟考试练习模式');
+}
+
+const startWeaknessAnalysis = () => {
+  if (!userStore.isPremium) {
+    alert('此功能需要VIP会员权限')
+    return
+  }
+  
+  resetPractice();
+  startQuestionTimer(activeQuestionIndex.value);
+  alert('开始弱点分析模式');
+}
+
+const upgradeToPremium = () => {
+  alert('升级VIP会员，享受更多专属功能')
+  // 这里应该跳转到VIP升级页面
+}
+
+const startTimer = () => {
+  if (practiceTimer.value) {
+    clearInterval(practiceTimer.value);
+  }
+  practiceTimer.value = setInterval(() => {
+    practiceTime.value++;
+  }, 60000); // 每分钟更新一次
+}
+
+const savePracticeProgress = () => {
+  const progress = {
+    domains: domains,
+    questions: questions.value,
+    lastUpdated: new Date().toISOString()
+  }
+  localStorage.setItem('practiceProgress', JSON.stringify(progress))
+}
+
+const loadPracticeProgress = () => {
+  const savedProgress = localStorage.getItem('practiceProgress')
+  if (savedProgress) {
+    const progress = JSON.parse(savedProgress)
+    Object.assign(questions.value, progress.questions || questions.value)
+  }
+}
+
+const saveBookmarksToLocalStorage = () => {
+  const bookmarks = []
+  Object.values(questions.value).forEach(domainQuestions => {
+    domainQuestions.forEach(question => {
+      if (question.bookmarked) {
+        bookmarks.push(question.id)
+      }
+    })
+  })
+  localStorage.setItem('practiceBookmarks', JSON.stringify(bookmarks))
+}
+
+const loadBookmarksFromLocalStorage = () => {
+  const savedBookmarks = localStorage.getItem('practiceBookmarks')
+  if (savedBookmarks) {
+    const bookmarks = JSON.parse(savedBookmarks)
+    Object.values(questions.value).forEach(domainQuestions => {
+      domainQuestions.forEach(question => {
+        question.bookmarked = bookmarks.includes(question.id)
+      })
+    })
+  }
+}
+
+const saveWrongQuestionsToLocalStorage = (question) => {
+  const wrongQuestions = JSON.parse(localStorage.getItem('wrongQuestions') || '[]')
+  if (!wrongQuestions.find(q => q.id === question.id)) {
+    wrongQuestions.push({
+      id: question.id,
+      text: question.text,
+      knowledgePoint: question.knowledgePoint,
+      userAnswer: question.userAnswer,
+      correctAnswer: question.correctAnswer,
+      timeSpent: question.timeSpent,
+      addedAt: new Date().toISOString()
+    })
+    localStorage.setItem('wrongQuestions', JSON.stringify(wrongQuestions))
+  }
+}
+
+// 打开登录弹窗 - 使用全局事件
+const openLoginDialog = () => {
+  window.dispatchEvent(new CustomEvent('open-login-dialog'))
+}
+
+const handleResize = () => {
+  if (window.innerWidth > 768) {
+    mobileMenuOpen.value = false
+  }
+}
+
+// 监听活跃题目变化
+watch(activeQuestionIndex, (newIndex, oldIndex) => {
+  if (oldIndex !== newIndex) {
+    stopQuestionTimer(oldIndex);
+  }
+})
+
+onMounted(() => {
+  window.addEventListener('resize', handleResize);
+  
+  // 从本地存储加载用户数据
+  loadPracticeProgress()
+  loadBookmarksFromLocalStorage()
+  
+  // 确保学习数据已加载
+  learningStore.loadFromStorage()
+  
+  // 开始第一题的计时
+  if (userStore.isLoggedIn && activeDomain.value) {
+    startQuestionTimer(activeQuestionIndex.value);
+  }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+  
+  // 停止所有计时器
+  if (practiceTimer.value) {
+    clearInterval(practiceTimer.value);
+  }
+  
+  // 停止所有题目计时
+  const domainQuestions = getDomainQuestions(activeDomain.value);
+  domainQuestions.forEach((_, index) => stopQuestionTimer(index));
+})
+</script>
 
 <style scoped>
 .practice {
   min-height: 100vh;
   background-color: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans GB", "PingFang SC", "Microsoft YaHei", "Noto Sans JP", "Noto Sans", Arial, sans-serif;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  padding-top: 20px;
 }
 
-/* ========= 布局容器 ========= */
+/* === 修复容器居中问题 === */
 .container {
-  max-width: var(--max-width);
+  max-width: var(--max-width, 1200px);
   margin: 0 auto;
-  padding: 0 var(--container-padding);
-  position: relative;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  padding: 0 var(--container-padding, 2rem);
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* ========= 顶部导航栏 ========= */
-.top-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 0;
-  position: sticky;
-  top: 0;
-  background: var(--bg);
-  z-index: 100;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  color: var(--primary-dark);
-  text-decoration: none;
-  font-size: 18px;
-}
-
-.logo .mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 800;
-  font-size: 16px;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.nav-links a {
-  color: var(--muted);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 15px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.nav-links a:hover, .nav-links a.active {
-  background: var(--primary-light);
-  color: var(--primary-dark);
-}
-
-.nav-links a.active {
-  font-weight: 700;
-}
-
-/* 用户状态样式 */
-.user-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--primary-light);
-  color: var(--primary-dark);
-}
-
-.user-avatar {
-  font-size: 18px;
-}
-
-.user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.user-name {
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.user-tier {
-  font-size: 12px;
-  opacity: 0.8;
-}
-
-.login-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.mobile-menu-toggle {
-  display: none;
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: var(--muted);
-  padding: 8px;
-  border-radius: 8px;
+/* 确保所有主要部分都有适当的间距 */
+.page-header,
+.quick-nav,
+.main-content,
+.cta-section {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 100%;
 }
 
 /* ========= 页面头部 ========= */
 .page-header {
   background: linear-gradient(135deg, rgba(42, 121, 96, 0.05), rgba(42, 121, 96, 0.02));
-  border-radius: 20px;
-  padding: 40px;
-  margin: 30px 0;
+  border-radius: var(--radius);
+  padding: 3rem 2rem;
+  margin: 2rem 0;
   text-align: center;
-  position: relative;
+  width: 100%;
 }
 
 .header-content h1 {
-  font-size: 36px;
+  font-size: 2.5rem;
   font-weight: 800;
   color: var(--primary-dark);
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 .header-content p {
-  font-size: 18px;
+  font-size: 1.125rem;
   color: var(--muted);
   max-width: 700px;
-  margin: 0 auto 30px;
+  margin: 0 auto 2rem;
   line-height: 1.6;
 }
 
@@ -1068,7 +1116,7 @@ export default {
 .header-stats {
   display: flex;
   justify-content: center;
-  gap: 40px;
+  gap: 3rem;
   flex-wrap: wrap;
 }
 
@@ -1078,14 +1126,14 @@ export default {
 
 .stat-number {
   display: block;
-  font-size: 28px;
+  font-size: 2rem;
   font-weight: 700;
   color: var(--primary);
-  margin-bottom: 4px;
+  margin-bottom: 0.25rem;
 }
 
 .stat-label {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--muted);
 }
 
@@ -1093,41 +1141,44 @@ export default {
 .quick-nav {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 30px;
-  margin: 40px 0;
+  gap: 2rem;
+  margin: 3rem 0;
+  width: 100%;
 }
 
 .nav-section h3 {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 600;
   color: var(--primary-dark);
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 .domain-buttons {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 .domain-btn {
   background: var(--card-bg);
   border: 2px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 1rem;
   text-align: left;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.5rem;
   position: relative;
+  border: none;
+  font-family: inherit;
 }
 
 .domain-btn:hover:not(:disabled) {
   border-color: var(--primary);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(42, 121, 96, 0.1);
+  box-shadow: var(--shadow);
 }
 
 .domain-btn.active {
@@ -1148,7 +1199,7 @@ export default {
   position: absolute;
   top: 8px;
   right: 8px;
-  background: var(--premium);
+  background: #f59e0b;
   color: white;
   font-size: 10px;
   padding: 2px 6px;
@@ -1173,21 +1224,21 @@ export default {
 .tool-buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 .tool-btn {
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 1rem;
   text-align: center;
   text-decoration: none;
   color: var(--text);
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.5rem;
   align-items: center;
   cursor: pointer;
   border: none;
@@ -1198,7 +1249,7 @@ export default {
 .tool-btn:hover:not(:disabled) {
   border-color: var(--primary);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(42, 121, 96, 0.1);
+  box-shadow: var(--shadow);
 }
 
 .tool-btn:disabled {
@@ -1223,23 +1274,25 @@ export default {
 
 /* ========= 主要内容区域 ========= */
 .main-content {
-  margin: 40px 0;
+  margin: 3rem 0;
   flex: 1;
+  width: 100%;
 }
 
 /* ========= 练习模式选择 ========= */
 .practice-modes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
-  margin-bottom: 40px;
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+  width: 100%;
 }
 
 .mode-card {
   background: var(--card-bg);
   border-radius: var(--radius);
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(12, 35, 50, 0.06);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
   transition: all 0.3s ease;
   border: 1px solid var(--border);
   cursor: pointer;
@@ -1249,7 +1302,7 @@ export default {
 
 .mode-card:hover:not(.disabled) {
   transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(12, 35, 50, 0.12);
+  box-shadow: var(--shadow-lg);
   border-color: var(--primary);
 }
 
@@ -1259,7 +1312,7 @@ export default {
 }
 
 .mode-card.premium {
-  border: 2px solid var(--premium);
+  border: 2px solid #f59e0b;
   background: linear-gradient(135deg, #fffbeb, #fef3c7);
 }
 
@@ -1282,7 +1335,7 @@ export default {
   position: absolute;
   top: 12px;
   right: 12px;
-  background: var(--premium);
+  background: #f59e0b;
   color: white;
   font-size: 12px;
   padding: 4px 8px;
@@ -1291,64 +1344,66 @@ export default {
 }
 
 .mode-icon {
-  font-size: 40px;
-  margin-bottom: 16px;
+  font-size: 3rem;
+  margin-bottom: 1rem;
 }
 
 .mode-card h3 {
-  font-size: 18px;
+  font-size: 1.2rem;
   font-weight: 700;
   color: var(--primary-dark);
-  margin-bottom: 12px;
+  margin-bottom: 0.75rem;
 }
 
 .mode-card p {
   color: var(--muted);
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.6;
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 .mode-stats {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
 /* ========= VIP专属练习模式 ========= */
 .premium-modes {
-  margin-bottom: 40px;
+  margin-bottom: 3rem;
+  width: 100%;
 }
 
 .section-title {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--primary-dark);
-  margin-bottom: 24px;
+  margin-bottom: 1.5rem;
   text-align: center;
 }
 
 /* ========= 领域练习区域 ========= */
 .domain-practice {
-  margin-bottom: 40px;
+  margin-bottom: 3rem;
+  width: 100%;
 }
 
 .domain-header {
-  margin-bottom: 30px;
+  margin-bottom: 2rem;
 }
 
 .domain-header h2 {
-  font-size: 28px;
+  font-size: 1.75rem;
   font-weight: 700;
   color: var(--primary-dark);
-  margin-bottom: 8px;
+  margin-bottom: 0.5rem;
 }
 
 .domain-progress {
   background: var(--card-bg);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 1rem;
   max-width: 300px;
 }
 
@@ -1378,30 +1433,37 @@ export default {
 /* ========= 问题网格 ========= */
 .questions-grid {
   display: grid;
-  gap: 24px;
-  margin-bottom: 30px;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  width: 100%;
 }
 
 .question-card {
   background: var(--card-bg);
   border-radius: var(--radius);
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(12, 35, 50, 0.06);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
   transition: all 0.3s ease;
   border: 1px solid var(--border);
   position: relative;
+  cursor: pointer;
 }
 
 .question-card:hover {
-  box-shadow: 0 8px 24px rgba(12, 35, 50, 0.12);
+  box-shadow: var(--shadow-lg);
+}
+
+.question-card.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(42, 121, 96, 0.2);
 }
 
 .question-card.correct {
-  border-left: 4px solid var(--correct);
+  border-left: 4px solid #10b981;
 }
 
 .question-card.incorrect {
-  border-left: 4px solid var(--incorrect);
+  border-left: 4px solid #ef4444;
 }
 
 .question-card.premium-only {
@@ -1426,20 +1488,20 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  color: var(--premium);
+  gap: 0.5rem;
+  color: #f59e0b;
   font-weight: 600;
 }
 
 .lock-icon {
-  font-size: 24px;
+  font-size: 1.5rem;
 }
 
 .question-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 .question-number {
@@ -1448,62 +1510,65 @@ export default {
 }
 
 .difficulty {
-  font-size: 12px;
+  font-size: 0.75rem;
   padding: 4px 8px;
   border-radius: 12px;
   font-weight: 600;
 }
 
 .difficulty.easy {
-  background: color-mix(in srgb, var(--easy) 20%, transparent);
-  color: var(--easy);
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
 }
 
 .difficulty.medium {
-  background: color-mix(in srgb, var(--medium) 20%, transparent);
-  color: var(--medium);
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
 }
 
 .difficulty.hard {
-  background: color-mix(in srgb, var(--hard) 20%, transparent);
-  color: var(--hard);
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
 }
 
 .bookmark-btn {
   background: none;
   border: none;
-  font-size: 18px;
+  font-size: 1.125rem;
   cursor: pointer;
   color: var(--muted);
   transition: color 0.3s ease;
+  padding: 4px;
+  border-radius: 4px;
 }
 
 .bookmark-btn:hover, .bookmark-btn.bookmarked {
-  color: var(--warning);
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
 }
 
 .question-content {
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 .question-text {
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.6;
-  margin-bottom: 20px;
+  margin-bottom: 1.25rem;
   color: var(--text);
 }
 
 .options {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 .option {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
   border: 1px solid var(--border);
   border-radius: 8px;
   cursor: pointer;
@@ -1521,13 +1586,13 @@ export default {
 }
 
 .option.correct-option {
-  border-color: var(--correct);
-  background: color-mix(in srgb, var(--correct) 10%, transparent);
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
 }
 
 .option.incorrect-option {
-  border-color: var(--incorrect);
-  background: color-mix(in srgb, var(--incorrect) 10%, transparent);
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .option input[type="radio"] {
@@ -1540,8 +1605,8 @@ export default {
 }
 
 .answer-explanation {
-  margin-top: 20px;
-  padding: 16px;
+  margin-top: 1.25rem;
+  padding: 1rem;
   background: var(--primary-light);
   border-radius: 8px;
   border-left: 4px solid var(--primary);
@@ -1551,45 +1616,46 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 0.75rem;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .result.correct {
-  color: var(--correct);
+  color: #10b981;
   font-weight: 600;
 }
 
 .result.incorrect {
-  color: var(--incorrect);
+  color: #ef4444;
   font-weight: 600;
 }
 
 .correct-answer {
   color: var(--muted);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .explanation-text {
   line-height: 1.6;
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 .explanation-actions {
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
 .action-btn {
-  padding: 8px 16px;
+  padding: 0.5rem 1rem;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--card-bg);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 0.875rem;
   transition: all 0.2s ease;
+  font-family: inherit;
 }
 
 .action-btn:hover {
@@ -1602,11 +1668,12 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 16px;
+  padding-top: 1rem;
   border-top: 1px solid var(--border);
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--muted);
-  gap: 8px;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .knowledge-point {
@@ -1618,32 +1685,39 @@ export default {
 }
 
 .practice-count {
-  font-size: 12px;
+  font-size: 0.75rem;
+}
+
+.time-spent {
+  font-size: 0.75rem;
+  color: var(--primary);
+  font-weight: 600;
 }
 
 /* ========= 练习操作按钮 ========= */
 .practice-actions {
   display: flex;
-  gap: 12px;
+  gap: 0.75rem;
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: 40px;
+  margin-bottom: 3rem;
+  width: 100%;
 }
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 24px;
+  padding: 0.75rem 1.5rem;
   border-radius: 8px;
   border: none;
   cursor: pointer;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 0.875rem;
   transition: all 0.3s ease;
   text-decoration: none;
   font-family: inherit;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .btn:disabled {
@@ -1675,7 +1749,7 @@ export default {
 }
 
 .btn-premium {
-  background: var(--premium);
+  background: #f59e0b;
   color: white;
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
 }
@@ -1688,46 +1762,47 @@ export default {
 
 /* ========= 练习统计 ========= */
 .practice-stats {
-  margin-bottom: 40px;
+  margin-bottom: 3rem;
+  width: 100%;
 }
 
 .stats-card {
   background: var(--card-bg);
   border-radius: var(--radius);
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(12, 35, 50, 0.06);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
 }
 
 .stats-card h3 {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 700;
   color: var(--primary-dark);
-  margin-bottom: 20px;
+  margin-bottom: 1.25rem;
   text-align: center;
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 16px;
+  gap: 1rem;
 }
 
 .stat-item {
   text-align: center;
-  padding: 16px;
+  padding: 1rem;
   background: var(--primary-light);
   border-radius: 8px;
 }
 
 .stat-value {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--primary);
-  margin-bottom: 4px;
+  margin-bottom: 0.25rem;
 }
 
 .stat-label {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--muted);
 }
 
@@ -1735,27 +1810,28 @@ export default {
 .login-prompt, .upgrade-prompt {
   background: var(--card-bg);
   border-radius: var(--radius);
-  padding: 40px;
+  padding: 2.5rem;
   text-align: center;
-  margin: 40px 0;
+  margin: 2.5rem 0;
   border: 1px solid var(--border);
+  width: 100%;
 }
 
 .upgrade-prompt {
-  border: 2px solid var(--premium);
+  border: 2px solid #f59e0b;
   background: linear-gradient(135deg, #fffbeb, #fef3c7);
 }
 
 .prompt-content h3 {
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--primary-dark);
-  margin-bottom: 12px;
+  margin-bottom: 0.75rem;
 }
 
 .prompt-content p {
   color: var(--muted);
-  margin-bottom: 20px;
+  margin-bottom: 1.25rem;
   max-width: 500px;
   margin-left: auto;
   margin-right: auto;
@@ -1764,21 +1840,22 @@ export default {
 /* ========= 底部行动号召 ========= */
 .cta-section {
   text-align: center;
-  padding: 40px 0;
-  margin: 60px 0 40px;
+  padding: 2.5rem 0;
+  margin: 3rem 0 2.5rem;
+  width: 100%;
 }
 
 .cta-section h2 {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--primary-dark);
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 .cta-section p {
-  font-size: 16px;
+  font-size: 1rem;
   color: var(--muted);
-  margin-bottom: 24px;
+  margin-bottom: 1.5rem;
   max-width: 500px;
   margin-left: auto;
   margin-right: auto;
@@ -1787,20 +1864,9 @@ export default {
 
 .cta-buttons {
   display: flex;
-  gap: 16px;
+  gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
-}
-
-/* ========= 页脚 ========= */
-.footer {
-  text-align: center;
-  padding: 40px 0;
-  margin-top: 60px;
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 14px;
-  width: 100%;
 }
 
 /* ========= 响应式设计 ========= */
@@ -1812,46 +1878,23 @@ export default {
   .practice-modes {
     grid-template-columns: repeat(2, 1fr);
   }
+  
+  .container {
+    padding: 0 var(--container-padding, 1.5rem);
+  }
 }
 
 @media (max-width: 768px) {
-  .nav-links {
-    display: none;
-    position: absolute;
-    top: 70px;
-    left: 0;
-    right: 0;
-    background: white;
-    flex-direction: column;
-    padding: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    border-radius: 12px;
-    margin: 0 20px;
-    z-index: 100;
-  }
-  
-  .nav-links.mobile-show {
-    display: flex;
-  }
-  
-  .mobile-menu-toggle {
-    display: block;
-  }
-  
   .page-header {
-    padding: 30px 20px;
+    padding: 2rem 1rem;
   }
   
   .header-content h1 {
-    font-size: 28px;
+    font-size: 2rem;
   }
   
   .header-content p {
-    font-size: 16px;
-  }
-  
-  .header-stats {
-    gap: 20px;
+    font-size: 1rem;
   }
   
   .practice-modes {
@@ -1892,31 +1935,23 @@ export default {
   
   .question-footer {
     flex-direction: column;
-    gap: 8px;
+    gap: 0.5rem;
     align-items: flex-start;
+  }
+  
+  .container {
+    padding: 0 var(--container-padding, 1rem);
   }
 }
 
 @media (max-width: 480px) {
-  .page-header {
-    padding: 20px 16px;
-  }
-  
-  .header-content h1 {
-    font-size: 24px;
-  }
-  
-  .header-content p {
-    font-size: 16px;
-  }
-  
   .header-stats {
     flex-direction: column;
-    gap: 16px;
+    gap: 1rem;
   }
   
   .stat-number {
-    font-size: 24px;
+    font-size: 1.75rem;
   }
   
   .stats-grid {
@@ -1930,6 +1965,10 @@ export default {
   .action-btn {
     width: 100%;
     text-align: center;
+  }
+  
+  .container {
+    padding: 0 1rem;
   }
 }
 </style>

@@ -1,26 +1,13 @@
 <template>
   <div class="login">
     <div class="container">
-      <!-- 顶部导航栏 -->
-      <header class="top-nav">
-        <router-link to="/" class="logo">
-          <span class="mark">宅</span>
-          <span class="name">宅学苑</span>
-        </router-link>
-        
-        <nav class="nav-links" :class="{ 'mobile-show': mobileMenuOpen }">
-          <router-link to="/">首页</router-link>
-          <router-link to="/notes">中文笔记</router-link>
-          <router-link to="/video">视频学习</router-link>
-          <router-link to="/practice">强化练习</router-link>
-          <router-link to="/exam">真题模拟</router-link>
-          <router-link to="/community">学习社群</router-link>
-          <router-link to="/dashboard">学习仪表盘</router-link>
-          <router-link to="/register">注册</router-link>
-        </nav>
-        
-        <button class="mobile-menu-toggle" @click="toggleMobileMenu">☰</button>
-      </header>
+      <!-- 页面头部 -->
+      <div class="page-header">
+        <div class="header-content">
+          <h1>登录账户</h1>
+          <p>登录以继续您的学习进度</p>
+        </div>
+      </div>
 
       <!-- 登录表单 -->
       <div class="auth-container">
@@ -88,211 +75,184 @@
         </div>
       </div>
 
-      <!-- 页脚 -->
-      <footer class="footer">
-        <p>© 2025 宅学苑 - 日本宅建士考试中文学习平台</p>
-      </footer>
+      <!-- 底部行动号召 -->
+      <section class="cta-section">
+        <div class="cta-content">
+          <h2>立即开始您的学习之旅</h2>
+          <p>加入数千名正在备考日本宅建士考试的学习者，获得个性化的学习体验</p>
+          <div class="cta-buttons">
+            <router-link to="/notes" class="btn btn-primary">浏览学习资料</router-link>
+            <router-link to="/practice" class="btn btn-secondary">开始练习</router-link>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'Login',
-  data() {
-    return {
-      mobileMenuOpen: false,
-      showPassword: false,
-      loading: false,
-      form: {
-        email: '',
-        password: '',
-        remember: false
-      },
-      errors: {
-        email: '',
-        password: ''
-      }
-    }
-  },
-  methods: {
-    toggleMobileMenu() {
-      this.mobileMenuOpen = !this.mobileMenuOpen
-    },
-    handleResize() {
-      if (window.innerWidth > 768) {
-        this.mobileMenuOpen = false
-      }
-    },
-    togglePassword() {
-      this.showPassword = !this.showPassword
-    },
-    validateEmail() {
-      const email = this.form.email.trim()
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      
-      if (!email) {
-        this.errors.email = '请输入邮箱地址'
-        return false
-      } else if (!emailRegex.test(email)) {
-        this.errors.email = '请输入有效的邮箱地址'
-        return false
-      } else {
-        this.errors.email = ''
-        return true
-      }
-    },
-    validatePassword() {
-      const password = this.form.password
-      
-      if (!password) {
-        this.errors.password = '请输入密码'
-        return false
-      } else {
-        this.errors.password = ''
-        return true
-      }
-    },
-    validateForm() {
-      const isEmailValid = this.validateEmail()
-      const isPasswordValid = this.validatePassword()
-      
-      return isEmailValid && isPasswordValid
-    },
-    async handleSubmit() {
-      if (!this.validateForm()) {
-        return
-      }
-      
-      this.loading = true
-      
-      try {
-        // 模拟 API 调用 - 实际项目中替换为真实 API
-        await new Promise(resolve => setTimeout(resolve, 1500))
-        
-        // 登录成功处理
-        alert('登录成功！即将跳转到学习仪表盘。')
-        this.$router.push('/dashboard')
-        
-      } catch (error) {
-        console.error('登录失败:', error)
-        alert('登录失败，请检查您的邮箱和密码。')
-      } finally {
-        this.loading = false
-      }
-    }
-  },
-  mounted() {
-    window.addEventListener('resize', this.handleResize)
-  },
-  beforeUnmount() {
-    window.removeEventListener('resize', this.handleResize)
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const showPassword = ref(false)
+const loading = ref(false)
+
+const form = ref({
+  email: '',
+  password: '',
+  remember: false
+})
+
+const errors = ref({
+  email: '',
+  password: ''
+})
+
+// 方法
+const togglePassword = () => {
+  showPassword.value = !showPassword.value
+}
+
+const validateEmail = () => {
+  const email = form.value.email.trim()
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  
+  if (!email) {
+    errors.value.email = '请输入邮箱地址'
+    return false
+  } else if (!emailRegex.test(email)) {
+    errors.value.email = '请输入有效的邮箱地址'
+    return false
+  } else {
+    errors.value.email = ''
+    return true
   }
 }
+
+const validatePassword = () => {
+  const password = form.value.password
+  
+  if (!password) {
+    errors.value.password = '请输入密码'
+    return false
+  } else {
+    errors.value.password = ''
+    return true
+  }
+}
+
+const validateForm = () => {
+  const isEmailValid = validateEmail()
+  const isPasswordValid = validatePassword()
+  
+  return isEmailValid && isPasswordValid
+}
+
+const handleSubmit = async () => {
+  if (!validateForm()) {
+    return
+  }
+  
+  loading.value = true
+  
+  try {
+    // 模拟 API 调用 - 实际项目中替换为真实 API
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    // 从本地存储获取用户数据
+    const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]')
+    const user = users.find(u => u.email === form.value.email && u.password === form.value.password)
+    
+    if (user) {
+      // 保存登录状态
+      localStorage.setItem('currentUser', JSON.stringify({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        subscriptionTier: user.subscriptionTier,
+        isLoggedIn: true
+      }))
+      
+      // 登录成功处理
+      alert('登录成功！即将跳转到学习仪表盘。')
+      router.push('/dashboard')
+    } else {
+      alert('登录失败，请检查您的邮箱和密码。')
+    }
+    
+  } catch (error) {
+    console.error('登录失败:', error)
+    alert('登录失败，请稍后重试。')
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  // 如果用户已登录，重定向到首页
+  const currentUser = localStorage.getItem('currentUser')
+  if (currentUser) {
+    router.push('/')
+  }
+})
 </script>
 
-<style>
-/* CSS 变量定义 */
+<style scoped>
 :root {
   --primary: #2a7960;
-  --primary-dark: #205e4a;
-  --primary-light: #e8f5f0;
-  --bg: #f6f9fc;
+  --primary-dark: #1e5a47;
+  --primary-light: rgba(42, 121, 96, 0.1);
+  --bg: #f8fafc;
   --card-bg: #ffffff;
-  --text: #0b2130;
-  --muted: #64748b;
   --border: #e2e8f0;
+  --text: #334155;
+  --muted: #64748b;
   --radius: 12px;
-  --gap: 20px;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --max-width: 1200px;
   --container-padding: 20px;
-  --error: #e53e3e;
+  --error: #ef4444;
+  --success: #10b981;
+  --premium: #f59e0b;
 }
-</style>
 
-<style scoped>
 .login {
   min-height: 100vh;
   background-color: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans GB", "PingFang SC", "Microsoft YaHei", "Noto Sans JP", "Noto Sans", Arial, sans-serif;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  padding-top: 20px;
 }
 
-/* ========= 布局容器 ========= */
 .container {
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 0 var(--container-padding);
 }
 
-/* ========= 导航栏 ========= */
-.top-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 0;
+/* ========= 页面头部 ========= */
+.page-header {
+  background: linear-gradient(135deg, rgba(42, 121, 96, 0.05), rgba(42, 121, 96, 0.02));
+  border-radius: var(--radius);
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
 }
 
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  color: var(--primary-dark);
-  text-decoration: none;
-  font-size: 18px;
-}
-
-.logo .mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
+.header-content h1 {
+  font-size: 2.5rem;
   font-weight: 800;
-  font-size: 16px;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.nav-links a {
-  color: var(--muted);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 15px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.nav-links a:hover, .nav-links a.active {
-  background: var(--primary-light);
   color: var(--primary-dark);
+  margin-bottom: 1rem;
 }
 
-.nav-links a.active {
-  font-weight: 700;
-}
-
-.mobile-menu-toggle {
-  display: none;
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
+.header-content p {
+  font-size: 1.125rem;
   color: var(--muted);
-  padding: 8px;
-  border-radius: 8px;
+  max-width: 700px;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
 }
 
 /* ========= 登录表单 ========= */
@@ -300,7 +260,6 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 70vh;
   padding: 40px 0;
 }
 
@@ -372,7 +331,7 @@ export default {
 
 .form-input.error:focus {
   border-color: var(--error);
-  box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
 .password-toggle {
@@ -470,39 +429,59 @@ export default {
   font-weight: 600;
 }
 
-/* ========= 页脚 ========= */
-.footer {
+/* ========= 底部行动号召 ========= */
+.cta-section {
   text-align: center;
   padding: 40px 0;
-  margin-top: 60px;
-  border-top: 1px solid var(--border);
+  margin: 60px 0 40px;
+}
+
+.cta-section h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-bottom: 16px;
+}
+
+.cta-section p {
+  font-size: 16px;
   color: var(--muted);
-  font-size: 14px;
+  margin-bottom: 24px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+
+.cta-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+
+.btn-secondary:hover {
+  background: var(--primary-light);
 }
 
 /* ========= 响应式设计 ========= */
 @media (max-width: 768px) {
-  .nav-links {
-    display: none;
-    position: absolute;
-    top: 70px;
-    left: 0;
-    right: 0;
-    background: white;
-    flex-direction: column;
-    padding: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    border-radius: 12px;
-    margin: 0 20px;
-    z-index: 100;
+  .page-header {
+    padding: 2rem 1rem;
   }
   
-  .nav-links.mobile-show {
-    display: flex;
+  .header-content h1 {
+    font-size: 2rem;
   }
   
-  .mobile-menu-toggle {
-    display: block;
+  .header-content p {
+    font-size: 1rem;
   }
   
   .auth-card {
@@ -517,6 +496,30 @@ export default {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+  }
+  
+  .cta-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .btn {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 20px 16px;
+  }
+  
+  .auth-title {
+    font-size: 22px;
+  }
+  
+  .auth-icon {
+    font-size: 40px;
   }
 }
 </style>

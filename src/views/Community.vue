@@ -1,39 +1,6 @@
 <template>
   <div class="community">
     <div class="container">
-      <!-- 顶部导航栏 - 集成用户状态 -->
-      <header class="top-nav">
-        <router-link to="/" class="logo">
-          <span class="mark">宅</span>
-          <span class="name">宅学苑</span>
-        </router-link>
-        
-        <nav class="nav-links" :class="{ 'mobile-show': mobileMenuOpen }">
-          <router-link to="/">首页</router-link>
-          <router-link to="/notes">中文笔记</router-link>
-          <router-link to="/video">视频学习</router-link>
-          <router-link to="/practice">强化练习</router-link>
-          <router-link to="/exam">真题模拟</router-link>
-          <router-link to="/community" class="active">学习社群</router-link>
-          <router-link to="/dashboard">学习进度</router-link>
-          
-          <!-- 用户状态显示 -->
-          <div class="user-status" v-if="userStore.isLoggedIn">
-            <span class="user-avatar">👤</span>
-            <span class="user-info">
-              <span class="user-name">{{ userStore.userName }}</span>
-              <span class="user-tier">{{ userStore.subscriptionTier === 'premium' ? 'VIP会员' : '免费会员' }}</span>
-            </span>
-          </div>
-          <router-link v-else to="/login" class="login-link">
-            <span class="user-avatar">👤</span>
-            <span>访客登录</span>
-          </router-link>
-        </nav>
-        
-        <button class="mobile-menu-toggle" @click="toggleMobileMenu">☰</button>
-      </header>
-
       <!-- 页面头部 -->
       <div class="page-header">
         <div class="header-content">
@@ -502,7 +469,7 @@
           <div class="prompt-content">
             <h3>登录以参与社群讨论</h3>
             <p>登录后可以发表讨论、回答问题、加入学习小组，与同学们互动交流</p>
-            <router-link to="/login" class="btn btn-primary">立即登录</router-link>
+            <button class="btn btn-primary" @click="login">立即登录</button>
           </div>
         </section>
 
@@ -535,543 +502,557 @@
           </div>
         </div>
       </section>
-
-      <!-- 页脚 -->
-      <footer class="footer">
-        <p>© 2025 宅学苑 - 日本宅建士考试中文学习平台 | 专注·专业·高效</p>
-      </footer>
     </div>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 
-export default {
-  name: 'Community',
-  setup() {
-    const userStore = useUserStore()
-    return { userStore }
+const userStore = useUserStore()
+const router = useRouter()
+
+const mobileMenuOpen = ref(false)
+const activeSection = ref('discussion')
+const discussionFilter = ref('all')
+const qnaFilter = ref('all')
+const groupFilter = ref('all')
+const topicFilter = ref('all')
+
+// 配置数据
+const communitySections = [
+  { 
+    id: 'discussion', 
+    name: '学习讨论区', 
+    icon: '💬', 
+    description: '交流学习问题和方法' 
   },
-  data() {
-    return {
-      mobileMenuOpen: false,
-      activeSection: 'discussion',
-      discussionFilter: 'all',
-      qnaFilter: 'all',
-      groupFilter: 'all',
-      topicFilter: 'all',
-      communitySections: [
-        { 
-          id: 'discussion', 
-          name: '学习讨论区', 
-          icon: '💬', 
-          description: '交流学习问题和方法' 
-        },
-        { 
-          id: 'qna', 
-          name: '问答专区', 
-          icon: '❓', 
-          description: '提问和解答疑问' 
-        },
-        { 
-          id: 'groups', 
-          name: '学习小组', 
-          icon: '👥', 
-          description: '小组学习和互助' 
-        }
-      ],
-      communityStats: {
-        totalMembers: 1258,
-        activeToday: 342,
-        discussions: 3452
-      },
-      discussions: [
-        {
-          id: 1,
-          title: '宅建业法第35条的理解与应用',
-          content: '关于重要事项说明书的签名要求，有几点疑问想要请教大家...',
-          author: '张同学',
-          authorAvatar: '👤',
-          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2小时前
-          topic: 'business',
-          tags: ['宅建业法', '重要事项说明'],
-          likes: 15,
-          replies: 8,
-          views: 125,
-          isSolved: false,
-          isLiked: false,
-          isBookmarked: false,
-          requiresPremium: false
-        },
-        {
-          id: 2,
-          title: '求推荐好的记忆方法',
-          content: '法律条文太多记不住，大家有什么好的记忆方法可以分享吗？',
-          author: '李同学',
-          authorAvatar: '👤',
-          createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5小时前
-          topic: 'study',
-          tags: ['学习方法', '记忆技巧'],
-          likes: 23,
-          replies: 15,
-          views: 189,
-          isSolved: true,
-          isLiked: true,
-          isBookmarked: true,
-          requiresPremium: false
-        },
-        {
-          id: 3,
-          title: 'VIP专属：高级案例分析讨论',
-          content: '这是一个关于复杂不动产交易案例的深度分析讨论...',
-          author: '王老师',
-          authorAvatar: '👨‍🏫',
-          createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1天前
-          topic: 'advanced',
-          tags: ['案例分析', '深度讨论'],
-          likes: 8,
-          replies: 12,
-          views: 67,
-          isSolved: false,
-          isLiked: false,
-          isBookmarked: false,
-          requiresPremium: true
-        }
-      ],
-      questions: [
-        {
-          id: 1,
-          title: '关于不动产登记的必要条件？',
-          content: '请问在进行不动产登记时，需要满足哪些必要条件？有没有什么特别需要注意的地方？',
-          author: '陈同学',
-          authorAvatar: '👤',
-          createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3小时前
-          topic: 'rights',
-          tags: ['权利关系', '登记'],
-          answers: 5,
-          views: 89,
-          isAnswered: true,
-          requiresPremium: false
-        },
-        {
-          id: 2,
-          title: '宅建士的免许更新流程？',
-          content: '请问宅建士的免许更新具体流程是怎样的？需要准备哪些材料？',
-          author: '赵同学',
-          authorAvatar: '👤',
-          createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000), // 8小时前
-          topic: 'business',
-          tags: ['宅建业法', '免许'],
-          answers: 3,
-          views: 56,
-          isAnswered: false,
-          requiresPremium: false
-        },
-        {
-          id: 3,
-          title: 'VIP专属：复杂税务问题咨询',
-          content: '这是一个关于不动产交易中复杂税务处理的问题...',
-          author: '税务专家',
-          authorAvatar: '👨‍💼',
-          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2天前
-          topic: 'tax',
-          tags: ['税务', '高级'],
-          answers: 7,
-          views: 45,
-          isAnswered: true,
-          requiresPremium: true
-        }
-      ],
-      groups: [
-        {
-          id: 1,
-          name: '东京备考小组',
-          description: '东京地区考生互助学习小组，定期组织线下学习活动',
-          topic: 'regional',
-          tags: ['东京', '线下学习', '互助'],
-          memberCount: 45,
-          activeMembers: 28,
-          discussionCount: 123,
-          createdDays: 45,
-          lastActivity: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3小时前
-          isMember: false,
-          requiresPremium: false
-        },
-        {
-          id: 2,
-          name: '零基础冲刺班',
-          description: '零基础考生互相鼓励，共同冲刺考试',
-          topic: 'beginner',
-          tags: ['零基础', '每日打卡', '鼓励'],
-          memberCount: 28,
-          activeMembers: 18,
-          discussionCount: 67,
-          createdDays: 23,
-          lastActivity: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1小时前
-          isMember: true,
-          requiresPremium: false
-        },
-        {
-          id: 3,
-          name: 'VIP精英学习小组',
-          description: 'VIP会员专属的高阶学习小组，深度讨论和案例分析',
-          topic: 'advanced',
-          tags: ['VIP专属', '深度讨论', '案例分析'],
-          memberCount: 15,
-          activeMembers: 12,
-          discussionCount: 45,
-          createdDays: 30,
-          lastActivity: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5小时前
-          isMember: false,
-          requiresPremium: true
-        }
-      ],
-      hotDiscussions: [
-        {
-          id: 4,
-          title: '2024年考试时间预测讨论',
-          replies: 42
-        },
-        {
-          id: 5,
-          title: '各分野学习方法分享',
-          replies: 35
-        },
-        {
-          id: 6,
-          title: '模拟考试经验交流',
-          replies: 28
-        }
-      ],
-      activeUsers: [
-        {
-          id: 1,
-          name: '张老师',
-          avatar: '👨‍🏫',
-          points: 1250
-        },
-        {
-          id: 2,
-          name: '李学长',
-          avatar: '👨‍🎓',
-          points: 980
-        },
-        {
-          id: 3,
-          name: '王同学',
-          avatar: '👤',
-          points: 760
-        }
-      ]
-    }
+  { 
+    id: 'qna', 
+    name: '问答专区', 
+    icon: '❓', 
+    description: '提问和解答疑问' 
   },
-  computed: {
-    filteredDiscussions() {
-      let filtered = this.discussions
+  { 
+    id: 'groups', 
+    name: '学习小组', 
+    icon: '👥', 
+    description: '小组学习和互助' 
+  }
+]
 
-      // 按筛选条件过滤
-      if (this.discussionFilter === 'popular') {
-        filtered = filtered.filter(d => d.replies > 10)
-      } else if (this.discussionFilter === 'recent') {
-        filtered = filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      } else if (this.discussionFilter === 'solved') {
-        filtered = filtered.filter(d => d.isSolved)
-      }
+const communityStats = {
+  totalMembers: 1258,
+  activeToday: 342,
+  discussions: 3452
+}
 
-      // 按话题过滤
-      if (this.topicFilter !== 'all') {
-        filtered = filtered.filter(d => d.topic === this.topicFilter)
-      }
-
-      // VIP权限过滤
-      if (!this.userStore.isPremium) {
-        filtered = filtered.filter(d => !d.requiresPremium)
-      }
-
-      return filtered
-    },
-    filteredQuestions() {
-      let filtered = this.questions
-
-      // 按筛选条件过滤
-      if (this.qnaFilter === 'unanswered') {
-        filtered = filtered.filter(q => !q.isAnswered)
-      } else if (this.qnaFilter === 'answered') {
-        filtered = filtered.filter(q => q.isAnswered)
-      } else if (this.qnaFilter === 'popular') {
-        filtered = filtered.filter(q => q.answers > 5)
-      }
-
-      // VIP权限过滤
-      if (!this.userStore.isPremium) {
-        filtered = filtered.filter(q => !q.requiresPremium)
-      }
-
-      return filtered
-    },
-    filteredGroups() {
-      let filtered = this.groups
-
-      // 按筛选条件过滤
-      if (this.groupFilter === 'active') {
-        filtered = filtered.filter(g => g.activeMembers > 20)
-      } else if (this.groupFilter === 'new') {
-        filtered = filtered.filter(g => g.createdDays < 7)
-      } else if (this.groupFilter === 'premium') {
-        filtered = filtered.filter(g => g.requiresPremium)
-      }
-
-      // VIP权限过滤
-      if (!this.userStore.isPremium) {
-        filtered = filtered.filter(g => !g.requiresPremium)
-      }
-
-      return filtered
-    }
+const discussions = [
+  {
+    id: 1,
+    title: '宅建业法第35条的理解与应用',
+    content: '关于重要事项说明书的签名要求，有几点疑问想要请教大家...',
+    author: '张同学',
+    authorAvatar: '👤',
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2小时前
+    topic: 'business',
+    tags: ['宅建业法', '重要事项说明'],
+    likes: 15,
+    replies: 8,
+    views: 125,
+    isSolved: false,
+    isLiked: false,
+    isBookmarked: false,
+    requiresPremium: false
   },
-  methods: {
-    toggleMobileMenu() {
-      this.mobileMenuOpen = !this.mobileMenuOpen
-    },
-    handleResize() {
-      if (window.innerWidth > 768) {
-        this.mobileMenuOpen = false
-      }
-    },
-    switchSection(sectionId) {
-      this.activeSection = sectionId
-    },
-    startNewDiscussion() {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以发起讨论')
-        this.$router.push('/login')
-        return
-      }
-      
-      console.log('发起新讨论')
-      alert('开始创建新讨论')
-    },
-    askQuestion() {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以提问')
-        this.$router.push('/login')
-        return
-      }
-      
-      console.log('提问求助')
-      alert('开始提问')
-    },
-    createStudyGroup() {
-      if (!this.userStore.isPremium) {
-        alert('此功能需要VIP会员权限')
-        return
-      }
-      
-      console.log('创建学习小组')
-      alert('开始创建学习小组')
-    },
-    toggleLike(discussionId) {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以点赞')
-        return
-      }
-      
-      const discussion = this.discussions.find(d => d.id === discussionId)
-      if (discussion) {
-        discussion.isLiked = !discussion.isLiked
-        discussion.likes += discussion.isLiked ? 1 : -1
-        
-        // 保存到本地存储
-        this.saveLikesToLocalStorage()
-      }
-    },
-    bookmarkDiscussion(discussionId) {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以使用收藏功能')
-        return
-      }
-      
-      const discussion = this.discussions.find(d => d.id === discussionId)
-      if (discussion) {
-        discussion.isBookmarked = !discussion.isBookmarked
-        
-        // 保存到本地存储
-        this.saveBookmarksToLocalStorage()
-      }
-    },
-    viewDiscussion(discussion) {
-      console.log('查看讨论:', discussion.title)
-      // 这里应该跳转到讨论详情页面
-      alert(`查看讨论: ${discussion.title}`)
-    },
-    answerQuestion(question) {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以回答问题')
-        this.$router.push('/login')
-        return
-      }
-      
-      console.log('回答问题:', question.title)
-      // 这里应该跳转到回答页面
-      alert(`回答问题: ${question.title}`)
-    },
-    viewQuestion(question) {
-      console.log('查看问题:', question.title)
-      // 这里应该跳转到问题详情页面
-      alert(`查看问题: ${question.title}`)
-    },
-    joinGroup(groupId) {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以加入小组')
-        this.$router.push('/login')
-        return
-      }
-      
-      const group = this.groups.find(g => g.id === groupId)
-      if (group && !group.isMember) {
-        group.isMember = true
-        group.memberCount++
-        
-        // 保存到本地存储
-        this.saveGroupMembershipToLocalStorage()
-        
-        alert(`已成功加入 ${group.name}`)
-      }
-    },
-    leaveGroup(groupId) {
-      const group = this.groups.find(g => g.id === groupId)
-      if (group && group.isMember) {
-        group.isMember = false
-        group.memberCount--
-        
-        // 保存到本地存储
-        this.saveGroupMembershipToLocalStorage()
-        
-        alert(`已退出 ${group.name}`)
-      }
-    },
-    upgradeToPremium() {
-      alert('升级VIP会员，享受更多社群功能')
-      // 这里应该跳转到VIP升级页面
-    },
-    formatTime(date) {
-      const now = new Date()
-      const diff = now - new Date(date)
-      
-      const minutes = Math.floor(diff / (1000 * 60))
-      const hours = Math.floor(diff / (1000 * 60 * 60))
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-      
-      if (minutes < 60) {
-        return `${minutes}分钟前`
-      } else if (hours < 24) {
-        return `${hours}小时前`
-      } else {
-        return `${days}天前`
-      }
-    },
-    getTopicName(topic) {
-      const topicMap = {
-        'rights': '权利关系',
-        'business': '宅建业法',
-        'regulations': '法令制限',
-        'tax': '税・価格',
-        'study': '学习方法',
-        'advanced': '高级专题',
-        'regional': '地区小组',
-        'beginner': '新手小组'
-      }
-      return topicMap[topic] || topic
-    },
-    saveLikesToLocalStorage() {
-      const likes = this.discussions
-        .filter(d => d.isLiked)
-        .map(d => d.id)
-      
-      localStorage.setItem('communityLikes', JSON.stringify(likes))
-    },
-    loadLikesFromLocalStorage() {
-      const savedLikes = localStorage.getItem('communityLikes')
-      if (savedLikes) {
-        const likes = JSON.parse(savedLikes)
-        this.discussions.forEach(discussion => {
-          discussion.isLiked = likes.includes(discussion.id)
-        })
-      }
-    },
-    saveBookmarksToLocalStorage() {
-      const bookmarks = this.discussions
-        .filter(d => d.isBookmarked)
-        .map(d => d.id)
-      
-      localStorage.setItem('communityBookmarks', JSON.stringify(bookmarks))
-    },
-    loadBookmarksFromLocalStorage() {
-      const savedBookmarks = localStorage.getItem('communityBookmarks')
-      if (savedBookmarks) {
-        const bookmarks = JSON.parse(savedBookmarks)
-        this.discussions.forEach(discussion => {
-          discussion.isBookmarked = bookmarks.includes(discussion.id)
-        })
-      }
-    },
-    saveGroupMembershipToLocalStorage() {
-      const memberships = this.groups
-        .filter(g => g.isMember)
-        .map(g => g.id)
-      
-      localStorage.setItem('groupMemberships', JSON.stringify(memberships))
-    },
-    loadGroupMembershipsFromLocalStorage() {
-      const savedMemberships = localStorage.getItem('groupMemberships')
-      if (savedMemberships) {
-        const memberships = JSON.parse(savedMemberships)
-        this.groups.forEach(group => {
-          group.isMember = memberships.includes(group.id)
-        })
-      }
-    }
+  {
+    id: 2,
+    title: '求推荐好的记忆方法',
+    content: '法律条文太多记不住，大家有什么好的记忆方法可以分享吗？',
+    author: '李同学',
+    authorAvatar: '👤',
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5小时前
+    topic: 'study',
+    tags: ['学习方法', '记忆技巧'],
+    likes: 23,
+    replies: 15,
+    views: 189,
+    isSolved: true,
+    isLiked: true,
+    isBookmarked: true,
+    requiresPremium: false
   },
-  mounted() {
-    window.addEventListener('resize', this.handleResize)
+  {
+    id: 3,
+    title: 'VIP专属：高级案例分析讨论',
+    content: '这是一个关于复杂不动产交易案例的深度分析讨论...',
+    author: '王老师',
+    authorAvatar: '👨‍🏫',
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1天前
+    topic: 'advanced',
+    tags: ['案例分析', '深度讨论'],
+    likes: 8,
+    replies: 12,
+    views: 67,
+    isSolved: false,
+    isLiked: false,
+    isBookmarked: false,
+    requiresPremium: true
+  }
+]
+
+const questions = [
+  {
+    id: 1,
+    title: '关于不动产登记的必要条件？',
+    content: '请问在进行不动产登记时，需要满足哪些必要条件？有没有什么特别需要注意的地方？',
+    author: '陈同学',
+    authorAvatar: '👤',
+    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3小时前
+    topic: 'rights',
+    tags: ['权利关系', '登记'],
+    answers: 5,
+    views: 89,
+    isAnswered: true,
+    requiresPremium: false
+  },
+  {
+    id: 2,
+    title: '宅建士的免许更新流程？',
+    content: '请问宅建士的免许更新具体流程是怎样的？需要准备哪些材料？',
+    author: '赵同学',
+    authorAvatar: '👤',
+    createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000), // 8小时前
+    topic: 'business',
+    tags: ['宅建业法', '免许'],
+    answers: 3,
+    views: 56,
+    isAnswered: false,
+    requiresPremium: false
+  },
+  {
+    id: 3,
+    title: 'VIP专属：复杂税务问题咨询',
+    content: '这是一个关于不动产交易中复杂税务处理的问题...',
+    author: '税务专家',
+    authorAvatar: '👨‍💼',
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2天前
+    topic: 'tax',
+    tags: ['税务', '高级'],
+    answers: 7,
+    views: 45,
+    isAnswered: true,
+    requiresPremium: true
+  }
+]
+
+const groups = [
+  {
+    id: 1,
+    name: '东京备考小组',
+    description: '东京地区考生互助学习小组，定期组织线下学习活动',
+    topic: 'regional',
+    tags: ['东京', '线下学习', '互助'],
+    memberCount: 45,
+    activeMembers: 28,
+    discussionCount: 123,
+    createdDays: 45,
+    lastActivity: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3小时前
+    isMember: false,
+    requiresPremium: false
+  },
+  {
+    id: 2,
+    name: '零基础冲刺班',
+    description: '零基础考生互相鼓励，共同冲刺考试',
+    topic: 'beginner',
+    tags: ['零基础', '每日打卡', '鼓励'],
+    memberCount: 28,
+    activeMembers: 18,
+    discussionCount: 67,
+    createdDays: 23,
+    lastActivity: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1小时前
+    isMember: true,
+    requiresPremium: false
+  },
+  {
+    id: 3,
+    name: 'VIP精英学习小组',
+    description: 'VIP会员专属的高阶学习小组，深度讨论和案例分析',
+    topic: 'advanced',
+    tags: ['VIP专属', '深度讨论', '案例分析'],
+    memberCount: 15,
+    activeMembers: 12,
+    discussionCount: 45,
+    createdDays: 30,
+    lastActivity: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5小时前
+    isMember: false,
+    requiresPremium: true
+  }
+]
+
+const hotDiscussions = [
+  {
+    id: 4,
+    title: '2024年考试时间预测讨论',
+    replies: 42
+  },
+  {
+    id: 5,
+    title: '各分野学习方法分享',
+    replies: 35
+  },
+  {
+    id: 6,
+    title: '模拟考试经验交流',
+    replies: 28
+  }
+]
+
+const activeUsers = [
+  {
+    id: 1,
+    name: '张老师',
+    avatar: '👨‍🏫',
+    points: 1250
+  },
+  {
+    id: 2,
+    name: '李学长',
+    avatar: '👨‍🎓',
+    points: 980
+  },
+  {
+    id: 3,
+    name: '王同学',
+    avatar: '👤',
+    points: 760
+  }
+]
+
+// 计算属性
+const filteredDiscussions = computed(() => {
+  let filtered = discussions
+
+  // 按筛选条件过滤
+  if (discussionFilter.value === 'popular') {
+    filtered = filtered.filter(d => d.replies > 10)
+  } else if (discussionFilter.value === 'recent') {
+    filtered = filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  } else if (discussionFilter.value === 'solved') {
+    filtered = filtered.filter(d => d.isSolved)
+  }
+
+  // 按话题过滤
+  if (topicFilter.value !== 'all') {
+    filtered = filtered.filter(d => d.topic === topicFilter.value)
+  }
+
+  // VIP权限过滤
+  if (!userStore.isPremium) {
+    filtered = filtered.filter(d => !d.requiresPremium)
+  }
+
+  return filtered
+})
+
+const filteredQuestions = computed(() => {
+  let filtered = questions
+
+  // 按筛选条件过滤
+  if (qnaFilter.value === 'unanswered') {
+    filtered = filtered.filter(q => !q.isAnswered)
+  } else if (qnaFilter.value === 'answered') {
+    filtered = filtered.filter(q => q.isAnswered)
+  } else if (qnaFilter.value === 'popular') {
+    filtered = filtered.filter(q => q.answers > 5)
+  }
+
+  // VIP权限过滤
+  if (!userStore.isPremium) {
+    filtered = filtered.filter(q => !q.requiresPremium)
+  }
+
+  return filtered
+})
+
+const filteredGroups = computed(() => {
+  let filtered = groups
+
+  // 按筛选条件过滤
+  if (groupFilter.value === 'active') {
+    filtered = filtered.filter(g => g.activeMembers > 20)
+  } else if (groupFilter.value === 'new') {
+    filtered = filtered.filter(g => g.createdDays < 7)
+  } else if (groupFilter.value === 'premium') {
+    filtered = filtered.filter(g => g.requiresPremium)
+  }
+
+  // VIP权限过滤
+  if (!userStore.isPremium) {
+    filtered = filtered.filter(g => !g.requiresPremium)
+  }
+
+  return filtered
+})
+
+// 方法
+const switchSection = (sectionId) => {
+  activeSection.value = sectionId
+}
+
+const startNewDiscussion = () => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以发起讨论')
+    return
+  }
+  
+  alert('开始创建新讨论')
+}
+
+const askQuestion = () => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以提问')
+    return
+  }
+  
+  alert('开始提问')
+}
+
+const createStudyGroup = () => {
+  if (!userStore.isPremium) {
+    alert('此功能需要VIP会员权限')
+    return
+  }
+  
+  alert('开始创建学习小组')
+}
+
+const login = () => {
+  userStore.login({
+    id: 1,
+    name: '社区用户',
+    subscription_tier: 'free'
+  })
+  alert('登录成功！')
+}
+
+const upgradeToPremium = () => {
+  userStore.login({
+    id: 1,
+    name: '社区用户',
+    subscription_tier: 'premium'
+  })
+  alert('已升级为VIP会员！')
+}
+
+const toggleLike = (discussionId) => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以点赞')
+    return
+  }
+  
+  const discussion = discussions.find(d => d.id === discussionId)
+  if (discussion) {
+    discussion.isLiked = !discussion.isLiked
+    discussion.likes += discussion.isLiked ? 1 : -1
     
-    // 从本地存储加载用户数据
-    this.loadLikesFromLocalStorage()
-    this.loadBookmarksFromLocalStorage()
-    this.loadGroupMembershipsFromLocalStorage()
-  },
-  beforeUnmount() {
-    window.removeEventListener('resize', this.handleResize)
+    // 保存到本地存储
+    saveLikesToLocalStorage()
   }
 }
+
+const bookmarkDiscussion = (discussionId) => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以使用收藏功能')
+    return
+  }
+  
+  const discussion = discussions.find(d => d.id === discussionId)
+  if (discussion) {
+    discussion.isBookmarked = !discussion.isBookmarked
+    
+    // 保存到本地存储
+    saveBookmarksToLocalStorage()
+  }
+}
+
+const viewDiscussion = (discussion) => {
+  alert(`查看讨论: ${discussion.title}`)
+}
+
+const answerQuestion = (question) => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以回答问题')
+    return
+  }
+  
+  alert(`回答问题: ${question.title}`)
+}
+
+const viewQuestion = (question) => {
+  alert(`查看问题: ${question.title}`)
+}
+
+const joinGroup = (groupId) => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以加入小组')
+    return
+  }
+  
+  const group = groups.find(g => g.id === groupId)
+  if (group && !group.isMember) {
+    group.isMember = true
+    group.memberCount++
+    
+    // 保存到本地存储
+    saveGroupMembershipToLocalStorage()
+    
+    alert(`已成功加入 ${group.name}`)
+  }
+}
+
+const leaveGroup = (groupId) => {
+  const group = groups.find(g => g.id === groupId)
+  if (group && group.isMember) {
+    group.isMember = false
+    group.memberCount--
+    
+    // 保存到本地存储
+    saveGroupMembershipToLocalStorage()
+    
+    alert(`已退出 ${group.name}`)
+  }
+}
+
+const formatTime = (date) => {
+  const now = new Date()
+  const diff = now - new Date(date)
+  
+  const minutes = Math.floor(diff / (1000 * 60))
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  
+  if (minutes < 60) {
+    return `${minutes}分钟前`
+  } else if (hours < 24) {
+    return `${hours}小时前`
+  } else {
+    return `${days}天前`
+  }
+}
+
+const getTopicName = (topic) => {
+  const topicMap = {
+    'rights': '权利关系',
+    'business': '宅建业法',
+    'regulations': '法令制限',
+    'tax': '税・価格',
+    'study': '学习方法',
+    'advanced': '高级专题',
+    'regional': '地区小组',
+    'beginner': '新手小组'
+  }
+  return topicMap[topic] || topic
+}
+
+const saveLikesToLocalStorage = () => {
+  const likes = discussions
+    .filter(d => d.isLiked)
+    .map(d => d.id)
+  
+  localStorage.setItem('communityLikes', JSON.stringify(likes))
+}
+
+const loadLikesFromLocalStorage = () => {
+  const savedLikes = localStorage.getItem('communityLikes')
+  if (savedLikes) {
+    const likes = JSON.parse(savedLikes)
+    discussions.forEach(discussion => {
+      discussion.isLiked = likes.includes(discussion.id)
+    })
+  }
+}
+
+const saveBookmarksToLocalStorage = () => {
+  const bookmarks = discussions
+    .filter(d => d.isBookmarked)
+    .map(d => d.id)
+  
+  localStorage.setItem('communityBookmarks', JSON.stringify(bookmarks))
+}
+
+const loadBookmarksFromLocalStorage = () => {
+  const savedBookmarks = localStorage.getItem('communityBookmarks')
+  if (savedBookmarks) {
+    const bookmarks = JSON.parse(savedBookmarks)
+    discussions.forEach(discussion => {
+      discussion.isBookmarked = bookmarks.includes(discussion.id)
+    })
+  }
+}
+
+const saveGroupMembershipToLocalStorage = () => {
+  const memberships = groups
+    .filter(g => g.isMember)
+    .map(g => g.id)
+  
+  localStorage.setItem('groupMemberships', JSON.stringify(memberships))
+}
+
+const loadGroupMembershipsFromLocalStorage = () => {
+  const savedMemberships = localStorage.getItem('groupMemberships')
+  if (savedMemberships) {
+    const memberships = JSON.parse(savedMemberships)
+    groups.forEach(group => {
+      group.isMember = memberships.includes(group.id)
+    })
+  }
+}
+
+const handleResize = () => {
+  if (window.innerWidth > 768) {
+    mobileMenuOpen.value = false
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('resize', handleResize)
+  
+  // 从本地存储加载用户数据
+  loadLikesFromLocalStorage()
+  loadBookmarksFromLocalStorage()
+  loadGroupMembershipsFromLocalStorage()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+})
 </script>
 
-<style>
-/* CSS 变量定义 - 与其他模块保持一致 */
+<style scoped>
 :root {
   --primary: #2a7960;
-  --primary-dark: #205e4a;
-  --primary-light: #e8f5f0;
-  --bg: #f6f9fc;
+  --primary-dark: #1e5a47;
+  --primary-light: rgba(42, 121, 96, 0.1);
+  --bg: #f8fafc;
   --card-bg: #ffffff;
-  --text: #0b2130;
-  --muted: #64748b;
   --border: #e2e8f0;
+  --text: #334155;
+  --muted: #64748b;
   --radius: 12px;
-  --gap: 20px;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --max-width: 1200px;
-  --container-padding: 20px;
-  
-  /* 新增社群相关变量 */
+  --container-padding: 2rem;
   --correct: #10b981;
   --incorrect: #ef4444;
   --warning: #f59e0b;
   --premium: #f59e0b;
 }
-</style>
 
-<style scoped>
 .community {
   min-height: 100vh;
   background-color: var(--bg);
@@ -1080,125 +1061,29 @@ export default {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  padding: 20px 0;
 }
 
 /* ========= 布局容器 ========= */
 .container {
-  max-width: var(--max-width);
+   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 0 var(--container-padding);
+  padding: 0 calc(var(--container-padding) + 1rem); /* 增加左右内边距 */
   position: relative;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
-/* ========= 顶部导航栏 ========= */
-.top-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 0;
-  position: sticky;
-  top: 0;
-  background: var(--bg);
-  z-index: 100;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  color: var(--primary-dark);
-  text-decoration: none;
-  font-size: 18px;
-}
-
-.logo .mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 800;
-  font-size: 16px;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.nav-links a {
-  color: var(--muted);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 15px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.nav-links a:hover, .nav-links a.active {
-  background: var(--primary-light);
-  color: var(--primary-dark);
-}
-
-.nav-links a.active {
-  font-weight: 700;
-}
-
-/* 用户状态样式 */
-.user-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--primary-light);
-  color: var(--primary-dark);
-}
-
-.user-avatar {
-  font-size: 18px;
-}
-
-.user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.user-name {
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.user-tier {
-  font-size: 12px;
-  opacity: 0.8;
-}
-
-.login-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.mobile-menu-toggle {
-  display: none;
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: var(--muted);
-  padding: 8px;
-  border-radius: 8px;
+/* 确保所有主要部分都有适当的间距 */
+.page-header,
+.quick-nav,
+.main-content,
+.cta-section {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 100%;
 }
 
 /* ========= 页面头部 ========= */
@@ -1209,6 +1094,7 @@ export default {
   margin: 30px 0;
   text-align: center;
   position: relative;
+  width: 100%;
 }
 
 .header-content h1 {
@@ -1273,6 +1159,7 @@ export default {
   grid-template-columns: 2fr 1fr;
   gap: 30px;
   margin: 40px 0;
+  width: 100%;
 }
 
 .nav-section h3 {
@@ -1299,6 +1186,8 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  border: none;
+  font-family: inherit;
 }
 
 .section-btn:hover {
@@ -1385,6 +1274,7 @@ export default {
   grid-template-columns: 1fr 300px;
   gap: 30px;
   align-items: start;
+  width: 100%;
 }
 
 /* ========= 讨论区内容 ========= */
@@ -1401,6 +1291,7 @@ export default {
   margin-bottom: 24px;
   flex-wrap: wrap;
   gap: 16px;
+  width: 100%;
 }
 
 .section-header h2 {
@@ -1438,6 +1329,7 @@ export default {
   flex-direction: column;
   gap: 20px;
   margin-bottom: 40px;
+  width: 100%;
 }
 
 .discussion-card,
@@ -1450,6 +1342,8 @@ export default {
   transition: all 0.3s ease;
   border: 1px solid var(--border);
   position: relative;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .discussion-card:hover,
@@ -1510,6 +1404,7 @@ export default {
   align-items: flex-start;
   margin-bottom: 16px;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .user-info {
@@ -1555,12 +1450,12 @@ export default {
 
 .badge.solved,
 .badge.answered {
-  background: color-mix(in srgb, var(--correct) 20%, transparent);
+  background: rgba(16, 185, 129, 0.2);
   color: var(--correct);
 }
 
 .badge.popular {
-  background: color-mix(in srgb, var(--warning) 20%, transparent);
+  background: rgba(245, 158, 11, 0.2);
   color: var(--warning);
 }
 
@@ -1625,6 +1520,7 @@ export default {
   display: flex;
   gap: 16px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
 .stat {
@@ -1654,6 +1550,7 @@ export default {
   padding-top: 16px;
   border-top: 1px solid var(--border);
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .interaction-stats {
@@ -1694,6 +1591,7 @@ export default {
   gap: 16px;
   font-size: 14px;
   color: var(--muted);
+  flex-wrap: wrap;
 }
 
 .discussion-actions,
@@ -1701,6 +1599,7 @@ export default {
 .group-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* ========= 按钮样式 ========= */
@@ -1717,6 +1616,7 @@ export default {
   transition: all 0.3s ease;
   text-decoration: none;
   font-family: inherit;
+  box-sizing: border-box;
 }
 
 .btn:disabled {
@@ -1866,6 +1766,7 @@ export default {
   text-align: center;
   padding: 60px 40px;
   color: var(--muted);
+  width: 100%;
 }
 
 .no-discussions-icon,
@@ -1900,6 +1801,7 @@ export default {
   margin: 40px 0;
   border: 1px solid var(--border);
   grid-column: 1 / -1;
+  width: 100%;
 }
 
 .upgrade-prompt {
@@ -1928,6 +1830,7 @@ export default {
   padding: 40px 0;
   margin: 60px 0 40px;
   grid-column: 1 / -1;
+  width: 100%;
 }
 
 .cta-section h2 {
@@ -1954,18 +1857,6 @@ export default {
   flex-wrap: wrap;
 }
 
-/* ========= 页脚 ========= */
-.footer {
-  text-align: center;
-  padding: 40px 0;
-  margin-top: 60px;
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 14px;
-  width: 100%;
-  grid-column: 1 / -1;
-}
-
 /* ========= 响应式设计 ========= */
 @media (max-width: 1024px) {
   .quick-nav {
@@ -1982,32 +1873,13 @@ export default {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 20px;
   }
+
+  .container {
+    padding: 0 2rem;
+  }
 }
 
 @media (max-width: 768px) {
-  .nav-links {
-    display: none;
-    position: absolute;
-    top: 70px;
-    left: 0;
-    right: 0;
-    background: white;
-    flex-direction: column;
-    padding: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    border-radius: 12px;
-    margin: 0 20px;
-    z-index: 100;
-  }
-  
-  .nav-links.mobile-show {
-    display: flex;
-  }
-  
-  .mobile-menu-toggle {
-    display: block;
-  }
-  
   .page-header {
     padding: 30px 20px;
   }
@@ -2040,6 +1912,7 @@ export default {
   .filter-options {
     width: 100%;
     justify-content: flex-start;
+    flex-wrap: wrap;
   }
   
   .discussion-header,
@@ -2073,6 +1946,10 @@ export default {
   .cta-buttons {
     flex-direction: column;
     align-items: center;
+  }
+
+  .container {
+    padding: 0 1.5rem;
   }
 }
 
@@ -2120,6 +1997,10 @@ export default {
   
   .sidebar {
     grid-template-columns: 1fr;
+  }
+
+  .container {
+    padding: 0 1rem;
   }
 }
 </style>

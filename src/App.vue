@@ -68,39 +68,43 @@
     </main>
 
     <!-- 页脚 -->
-    <footer class="app-footer">
-      <div class="container">
-        <div class="footer-content">
-          <div class="footer-info">
-            <div class="footer-logo">
-              <span class="logo-icon">🏠</span>
-              <span class="logo-text">宅学苑</span>
-            </div>
-            <p class="footer-desc">
-              专为在日华人设计的宅建士资格考试备考平台
-            </p>
-          </div>
-          <div class="footer-links">
-            <div class="link-group">
-              <h4>学习资源</h4>
-              <a href="#notes">中文笔记</a>
-              <a href="#video">视频学习</a>
-              <a href="#practice">强化练习</a>
-              <a href="#exam">真题模拟</a>
-            </div>
-            <div class="link-group">
-              <h4>平台信息</h4>
-              <a href="#about">关于我们</a>
-              <a href="#help">使用帮助</a>
-              <a href="#contact">联系我们</a>
-            </div>
-          </div>
+   <!-- 修改后的 App.vue 页脚部分 -->
+<footer class="app-footer">
+  <div class="container">
+    <div class="footer-content">
+      <div class="footer-info">
+        <div class="footer-logo">
+          <span class="logo-icon">🏠</span>
+          <span class="logo-text">宅学苑</span>
         </div>
-        <div class="footer-bottom">
-          <p>&copy; 2024 宅学苑 - 日本宅建士考试中文学习平台</p>
+        <p class="footer-desc">
+          专为在日华人设计的宅建士资格考试备考平台
+        </p>
+      </div>
+      <div class="footer-links">
+        <div class="link-group">
+          <h4>学习资源</h4>
+          <router-link to="/notes">中文笔记</router-link>
+          <router-link to="/video">视频学习</router-link>
+          <router-link to="/practice">强化练习</router-link>
+          <router-link to="/exam">真题模拟</router-link>
+        </div>
+        <div class="link-group">
+          <h4>平台信息</h4>
+          <router-link to="/about">关于我们</router-link>
+          <!-- 暂时注释掉不存在的路由 -->
+          <!-- <router-link to="/help">使用帮助</router-link> -->
+          <!-- <router-link to="/contact">联系我们</router-link> -->
+          <a href="#" @click.prevent="showHelpInfo">使用帮助</a>
+          <a href="#" @click.prevent="showContactInfo">联系我们</a>
         </div>
       </div>
-    </footer>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2025 宅学苑 - 日本宅建士考试中文学习平台</p>
+    </div>
+  </div>
+</footer>
 
     <!-- 全局弹窗 -->
     <SimulatedLogin />
@@ -121,6 +125,14 @@ const handleLogout = () => {
   if (confirm('确定要退出登录吗？')) {
     userStore.logout()
   }
+}
+// 在 App.vue 的 script setup 部分添加
+const showHelpInfo = () => {
+  alert('使用帮助信息正在完善中，敬请期待！\n\n如有问题请联系客服：contact@zhaixueyuan.com')
+}
+
+const showContactInfo = () => {
+  alert('联系我们：\n\n📧 邮箱：contact@zhaixueyuan.com\n💬 客服微信：zhaixueyuan_kefu\n🏢 办公时间：周一至周五 9:00-18:00')
 }
 </script>
 

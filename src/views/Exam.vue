@@ -1,39 +1,7 @@
+<!-- src/views/Exam.vue -->
 <template>
   <div class="exam">
     <div class="container">
-      <!-- 顶部导航栏 - 集成用户状态 -->
-      <header class="top-nav">
-        <router-link to="/" class="logo">
-          <span class="mark">宅</span>
-          <span class="name">宅学苑</span>
-        </router-link>
-        
-        <nav class="nav-links" :class="{ 'mobile-show': mobileMenuOpen }">
-          <router-link to="/">首页</router-link>
-          <router-link to="/notes">中文笔记</router-link>
-          <router-link to="/video">视频学习</router-link>
-          <router-link to="/practice">强化练习</router-link>
-          <router-link to="/exam" class="active">真题模拟</router-link>
-          <router-link to="/community">学习社群</router-link>
-          <router-link to="/dashboard">学习进度</router-link>
-          
-          <!-- 用户状态显示 -->
-          <div class="user-status" v-if="userStore.isLoggedIn">
-            <span class="user-avatar">👤</span>
-            <span class="user-info">
-              <span class="user-name">{{ userStore.userName }}</span>
-              <span class="user-tier">{{ userStore.subscriptionTier === 'premium' ? 'VIP会员' : '免费会员' }}</span>
-            </span>
-          </div>
-          <router-link v-else to="/login" class="login-link">
-            <span class="user-avatar">👤</span>
-            <span>访客登录</span>
-          </router-link>
-        </nav>
-        
-        <button class="mobile-menu-toggle" @click="toggleMobileMenu">☰</button>
-      </header>
-
       <!-- 页面头部 -->
       <div class="page-header">
         <div class="header-content">
@@ -67,7 +35,7 @@
       <div class="quick-nav">
         <div class="nav-section">
           <h3>考试类型</h3>
-          <div class="exam-type-buttons">
+          <div class="type-buttons">
             <button 
               v-for="type in examTypes" 
               :key="type.id"
@@ -77,7 +45,7 @@
             >
               <span class="type-icon">{{ type.icon }}</span>
               <span class="type-name">{{ type.name }}</span>
-              <span class="type-desc">{{ type.description }}</span>
+              <span class="type-count">{{ getTypeCount(type.id) }}个考试</span>
             </button>
           </div>
         </div>
@@ -110,26 +78,22 @@
       <!-- 主要内容区域 -->
       <main class="main-content">
         <!-- 考试列表 -->
-        <section class="exam-list-section">
+        <section class="exam-section">
           <div class="section-header">
             <h2>{{ getActiveTypeName() }}考试</h2>
-            <div class="filter-options">
-              <select v-model="selectedYear" class="filter-select">
-                <option value="all">全部年份</option>
-                <option v-for="year in availableYears" :key="year" :value="year">
-                  {{ year }}年
-                </option>
-              </select>
-              <select v-model="selectedDifficulty" class="filter-select">
-                <option value="all">全部难度</option>
-                <option value="easy">简单</option>
-                <option value="medium">中等</option>
-                <option value="hard">困难</option>
-              </select>
+            <p>选择适合您的考试类型，全面提升应试能力</p>
+            <div class="section-progress">
+              <div class="progress-info">
+                <span>完成进度</span>
+                <span>{{ getTypeProgress(activeType) }}%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" :style="{ width: getTypeProgress(activeType) + '%' }"></div>
+              </div>
             </div>
           </div>
 
-          <div class="exam-cards">
+          <div class="exam-grid">
             <div 
               v-for="exam in filteredExams" 
               :key="exam.id"
@@ -150,65 +114,47 @@
               </div>
               
               <div class="card-header">
-                <div class="exam-badges">
-                  <span v-if="exam.isNew" class="badge new">新</span>
-                  <span v-if="exam.isRecommended" class="badge recommended">推荐</span>
-                  <span class="badge type" :class="exam.type">{{ getTypeBadgeText(exam.type) }}</span>
-                  <span v-if="exam.requiredSubscription === 'premium'" class="badge premium">VIP</span>
+                <div class="card-badge" :class="exam.difficultyClass">{{ exam.badgeText }}</div>
+                <button class="bookmark-btn" @click="toggleBookmark(exam.id)">
+                  <span>{{ exam.bookmarked ? '★' : '☆' }}</span>
+                </button>
+              </div>
+              
+              <div class="card-icon">{{ exam.icon }}</div>
+              <h3 class="card-title">{{ exam.title }}</h3>
+              <p class="card-desc">{{ exam.description }}</p>
+              
+              <div class="card-meta">
+                <span class="meta-item">
+                  <span class="meta-icon">⏱️</span>
+                  {{ exam.duration }}分钟
+                </span>
+                <span class="meta-item">
+                  <span class="meta-icon">📝</span>
+                  {{ exam.questionCount }}题
+                </span>
+                <span class="meta-item">
+                  <span class="meta-icon">🎯</span>
+                  {{ exam.difficulty }}
+                </span>
+              </div>
+              
+              <div class="card-progress" v-if="exam.userScore !== null">
+                <div class="progress-text">
+                  <span>您的成绩</span>
+                  <span :class="getScoreClass(exam.userScore)">{{ exam.userScore }}分</span>
                 </div>
-                <div class="exam-actions">
-                  <button 
-                    class="bookmark-btn"
-                    :class="{ bookmarked: exam.bookmarked }"
-                    @click="toggleBookmark(exam.id)"
-                    :disabled="!userStore.isLoggedIn"
-                  >
-                    {{ exam.bookmarked ? '⭐' : '☆' }}
-                  </button>
+                <div class="progress-bar">
+                  <div class="progress-fill" :style="{ width: (exam.userScore / exam.totalScore * 100) + '%' }"></div>
+                </div>
+                <div class="progress-status">
+                  <span class="status" :class="exam.userScore >= exam.passingScore ? 'passed' : 'failed'">
+                    {{ exam.userScore >= exam.passingScore ? '通过' : '未通过' }}
+                  </span>
+                  <span class="attempts">尝试 {{ exam.attemptCount }} 次</span>
                 </div>
               </div>
-
-              <div class="card-content">
-                <h3 class="exam-title">{{ exam.title }}</h3>
-                <p class="exam-description">{{ exam.description }}</p>
-                
-                <div class="exam-meta">
-                  <div class="meta-item">
-                    <span class="meta-icon">⏱️</span>
-                    <span class="meta-text">{{ exam.duration }}分钟</span>
-                  </div>
-                  <div class="meta-item">
-                    <span class="meta-icon">📝</span>
-                    <span class="meta-text">{{ exam.questionCount }}题</span>
-                  </div>
-                  <div class="meta-item">
-                    <span class="meta-icon">🎯</span>
-                    <span class="meta-text">{{ exam.difficulty }}</span>
-                  </div>
-                </div>
-
-                <div class="exam-progress" v-if="exam.userScore !== null">
-                  <div class="progress-info">
-                    <span class="progress-label">您的成绩</span>
-                    <span class="progress-score" :class="getScoreClass(exam.userScore)">
-                      {{ exam.userScore }}分
-                    </span>
-                  </div>
-                  <div class="progress-bar">
-                    <div 
-                      class="progress-fill" 
-                      :style="{ width: (exam.userScore / exam.totalScore * 100) + '%' }"
-                    ></div>
-                  </div>
-                  <div class="progress-status">
-                    <span class="status" :class="exam.userScore >= exam.passingScore ? 'passed' : 'failed'">
-                      {{ exam.userScore >= exam.passingScore ? '通过' : '未通过' }}
-                    </span>
-                    <span class="attempts">尝试 {{ exam.attemptCount }} 次</span>
-                  </div>
-                </div>
-              </div>
-
+              
               <div class="card-actions">
                 <button 
                   v-if="exam.userScore === null && canTakeExam(exam)"
@@ -252,10 +198,15 @@
         </section>
 
         <!-- 考试统计 -->
-        <section class="exam-stats-section" v-if="userStore.isLoggedIn">
+        <section class="stats-section" v-if="userStore.isLoggedIn">
+          <div class="section-header">
+            <h2>考试统计</h2>
+            <p>全面了解您的学习进度和考试表现</p>
+          </div>
+
           <div class="stats-grid">
             <div class="stats-card">
-              <h3>考试统计</h3>
+              <h3>总体统计</h3>
               <div class="stats-content">
                 <div class="stat-item">
                   <div class="stat-value">{{ examStats.totalAttempts }}</div>
@@ -301,19 +252,23 @@
         </section>
 
         <!-- 最近考试记录 -->
-        <section class="recent-exams-section" v-if="recentExams.length > 0 && userStore.isLoggedIn">
-          <h2 class="section-title">最近考试记录</h2>
-          <div class="recent-exams">
+        <section class="recent-section" v-if="recentExams.length > 0 && userStore.isLoggedIn">
+          <div class="section-header">
+            <h2>最近考试记录</h2>
+            <p>查看您最近的考试表现和学习进度</p>
+          </div>
+
+          <div class="recent-grid">
             <div 
               v-for="exam in recentExams" 
               :key="exam.id"
-              class="recent-exam-card"
+              class="recent-card"
             >
-              <div class="exam-header">
-                <h4 class="exam-title">{{ exam.title }}</h4>
+              <div class="card-header">
+                <h4 class="card-title">{{ exam.title }}</h4>
                 <span class="exam-date">{{ formatDate(exam.date) }}</span>
               </div>
-              <div class="exam-result">
+              <div class="card-result">
                 <div class="score-display">
                   <span class="score" :class="getScoreClass(exam.score)">{{ exam.score }}分</span>
                   <span class="status" :class="exam.score >= exam.passingScore ? 'passed' : 'failed'">
@@ -325,7 +280,7 @@
                   <span class="detail-item">正确: {{ exam.correctCount }}/{{ exam.totalCount }}</span>
                 </div>
               </div>
-              <div class="exam-actions">
+              <div class="card-actions">
                 <button class="btn btn-outline" @click="reviewExam(exam)">查看详情</button>
                 <button class="btn btn-outline" @click="retakeExam(exam)">重新考试</button>
               </div>
@@ -338,7 +293,18 @@
           <div class="prompt-content">
             <h3>登录以保存考试记录</h3>
             <p>登录后可以保存您的考试进度、查看详细分析报告，并获得个性化学习建议</p>
-            <router-link to="/login" class="btn btn-primary">立即登录</router-link>
+            <button class="btn btn-primary" @click="openLoginDialog">立即登录</button>
+          </div>
+        </section>
+
+        <!-- 免费用户升级提示 -->
+        <section v-if="userStore.isLoggedIn && !userStore.isPremium" class="upgrade-prompt">
+          <div class="prompt-content">
+            <h3>升级VIP会员，解锁更多考试功能</h3>
+            <p>VIP会员可享受无限制考试、高级模拟考试、详细分析报告等高级功能</p>
+            <button class="btn btn-premium" @click="upgradeToPremium">
+              ⭐ 升级VIP会员
+            </button>
           </div>
         </section>
       </main>
@@ -356,603 +322,487 @@
           </div>
         </div>
       </section>
-
-      <!-- 页脚 -->
-      <footer class="footer">
-        <p>© 2025 宅学苑 - 日本宅建士考试中文学习平台 | 专注·专业·高效</p>
-      </footer>
     </div>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { useRouter } from 'vue-router'
 
-export default {
-  name: 'Exam',
-  setup() {
-    const userStore = useUserStore()
-    return { userStore }
-  },
-  data() {
-    return {
-      mobileMenuOpen: false,
-      activeType: 'all',
-      selectedYear: 'all',
-      selectedDifficulty: 'all',
-      examTypes: [
-        { 
-          id: 'all', 
-          name: '全部考试', 
-          icon: '📚', 
-          description: '所有类型的考试'
-        },
-        { 
-          id: 'simulation', 
-          name: '模拟考试', 
-          icon: '🎯', 
-          description: '最新考纲模拟'
-        },
-        { 
-          id: 'past', 
-          name: '历年真题', 
-          icon: '📅', 
-          description: '历年实际考题'
-        },
-        { 
-          id: 'chapter', 
-          name: '章节测试', 
-          icon: '📖', 
-          description: '按知识点测试'
-        },
-        { 
-          id: 'timed', 
-          name: '限时挑战', 
-          icon: '⏱️', 
-          description: '时间压力测试'
-        }
-      ],
-      exams: [
-        {
-          id: 'exam-2024-1',
-          title: '2024年模拟考试 #1',
-          description: '基于最新考纲的全真模拟考试，涵盖所有考试领域',
-          type: 'simulation',
-          year: 2024,
-          duration: 120,
-          questionCount: 50,
-          difficulty: '中等',
-          totalScore: 100,
-          passingScore: 70,
-          isNew: true,
-          isRecommended: true,
-          requiredSubscription: 'free',
-          userScore: 78,
-          attemptCount: 1,
-          bookmarked: true
-        },
-        {
-          id: 'exam-2023-real',
-          title: '2023年宅建士真题',
-          description: '2023年实际考试题目，真实考试体验',
-          type: 'past',
-          year: 2023,
-          duration: 120,
-          questionCount: 50,
-          difficulty: '中等',
-          totalScore: 100,
-          passingScore: 70,
-          isNew: false,
-          isRecommended: true,
-          requiredSubscription: 'free',
-          userScore: 65,
-          attemptCount: 2,
-          bookmarked: false
-        },
-        {
-          id: 'exam-2022-real',
-          title: '2022年宅建士真题',
-          description: '2022年实际考试题目，历年真题练习',
-          type: 'past',
-          year: 2022,
-          duration: 120,
-          questionCount: 50,
-          difficulty: '中等',
-          totalScore: 100,
-          passingScore: 70,
-          isNew: false,
-          isRecommended: false,
-          requiredSubscription: 'free',
-          userScore: null,
-          attemptCount: 0,
-          bookmarked: false
-        },
-        {
-          id: 'chapter-rights',
-          title: '权利关系章节测试',
-          description: '权利关系领域专项测试，重点考察民法相关知识',
-          type: 'chapter',
-          year: 2024,
-          duration: 60,
-          questionCount: 25,
-          difficulty: '简单',
-          totalScore: 100,
-          passingScore: 60,
-          isNew: true,
-          isRecommended: false,
-          requiredSubscription: 'free',
-          userScore: 85,
-          attemptCount: 1,
-          bookmarked: true
-        },
-        {
-          id: 'timed-challenge-1',
-          title: '限时挑战 #1',
-          description: '高强度时间压力测试，提升答题速度',
-          type: 'timed',
-          year: 2024,
-          duration: 90,
-          questionCount: 50,
-          difficulty: '困难',
-          totalScore: 100,
-          passingScore: 70,
-          isNew: false,
-          isRecommended: true,
-          requiredSubscription: 'free',
-          userScore: 72,
-          attemptCount: 1,
-          bookmarked: false
-        },
-        {
-          id: 'vip-exam-1',
-          title: 'VIP专属模拟 #1',
-          description: '高难度模拟考试，包含最新题型和深度分析',
-          type: 'simulation',
-          year: 2024,
-          duration: 120,
-          questionCount: 60,
-          difficulty: '困难',
-          totalScore: 100,
-          passingScore: 75,
-          isNew: true,
-          isRecommended: true,
-          requiredSubscription: 'premium',
-          userScore: null,
-          attemptCount: 0,
-          bookmarked: false
-        },
-        {
-          id: 'vip-exam-2',
-          title: 'VIP专属历年真题解析',
-          description: '历年真题深度解析，包含专家讲解和错题分析',
-          type: 'past',
-          year: 2024,
-          duration: 120,
-          questionCount: 50,
-          difficulty: '中等',
-          totalScore: 100,
-          passingScore: 70,
-          isNew: true,
-          isRecommended: true,
-          requiredSubscription: 'premium',
-          userScore: null,
-          attemptCount: 0,
-          bookmarked: false
-        }
-      ],
-      examStats: {
-        totalExams: 12,
-        totalAttempts: 25,
-        averageScore: 73,
-        bestScore: 92,
-        passedExams: 8,
-        totalTime: 36
-      },
-      domainStats: [
-        { id: 'rights', name: '权利关系', score: 78 },
-        { id: 'business', name: '宅建业法', score: 85 },
-        { id: 'regulations', name: '法令制限', score: 65 },
-        { id: 'tax', name: '税・価格', score: 72 },
-        { id: 'exempt', name: '五问免除', score: 88 }
-      ],
-      recentExams: [
-        {
-          id: 'exam-2024-1',
-          title: '2024年模拟考试 #1',
-          date: '2024-01-15',
-          score: 78,
-          passingScore: 70,
-          timeUsed: 115,
-          correctCount: 39,
-          totalCount: 50
-        },
-        {
-          id: 'chapter-rights',
-          title: '权利关系章节测试',
-          date: '2024-01-12',
-          score: 85,
-          passingScore: 60,
-          timeUsed: 55,
-          correctCount: 21,
-          totalCount: 25
-        },
-        {
-          id: 'exam-2023-real',
-          title: '2023年宅建士真题',
-          date: '2024-01-10',
-          score: 65,
-          passingScore: 70,
-          timeUsed: 118,
-          correctCount: 32,
-          totalCount: 50
-        }
-      ]
-    }
-  },
-  computed: {
-    availableYears() {
-      const years = [...new Set(this.exams.map(exam => exam.year))]
-      return years.sort((a, b) => b - a)
-    },
-    filteredExams() {
-      let filtered = this.exams
+const userStore = useUserStore()
+const router = useRouter()
 
-      // 按类型筛选
-      if (this.activeType !== 'all') {
-        filtered = filtered.filter(exam => exam.type === this.activeType)
-      }
+const mobileMenuOpen = ref(false)
+const activeType = ref('all')
+const selectedYear = ref('all')
+const selectedDifficulty = ref('all')
 
-      // 按年份筛选
-      if (this.selectedYear !== 'all') {
-        filtered = filtered.filter(exam => exam.year === parseInt(this.selectedYear))
-      }
+// 考试类型数据
+const examTypes = [
+  { 
+    id: 'all', 
+    name: '全部考试', 
+    icon: '📚',
+    description: '所有类型的考试'
+  },
+  { 
+    id: 'simulation', 
+    name: '模拟考试', 
+    icon: '🎯',
+    description: '最新考纲模拟'
+  },
+  { 
+    id: 'past', 
+    name: '历年真题', 
+    icon: '📅',
+    description: '历年实际考题'
+  },
+  { 
+    id: 'chapter', 
+    name: '章节测试', 
+    icon: '📖',
+    description: '按知识点测试'
+  },
+  { 
+    id: 'timed', 
+    name: '限时挑战', 
+    icon: '⏱️',
+    description: '时间压力测试'
+  }
+]
 
-      // 按难度筛选
-      if (this.selectedDifficulty !== 'all') {
-        filtered = filtered.filter(exam => {
-          const difficultyMap = {
-            'easy': '简单',
-            'medium': '中等',
-            'hard': '困难'
-          }
-          return exam.difficulty === difficultyMap[this.selectedDifficulty]
-        })
-      }
+// 考试数据
+const exams = [
+  {
+    id: 'exam-2024-1',
+    title: '2024年模拟考试 #1',
+    description: '基于最新考纲的全真模拟考试，涵盖所有考试领域',
+    type: 'simulation',
+    year: 2024,
+    duration: 120,
+    questionCount: 50,
+    difficulty: '中等',
+    difficultyClass: 'medium',
+    badgeText: '模拟',
+    icon: '1',
+    totalScore: 100,
+    passingScore: 70,
+    isNew: true,
+    isRecommended: true,
+    requiredSubscription: 'free',
+    userScore: 78,
+    attemptCount: 1,
+    bookmarked: true
+  },
+  {
+    id: 'exam-2023-real',
+    title: '2023年宅建士真题',
+    description: '2023年实际考试题目，真实考试体验',
+    type: 'past',
+    year: 2023,
+    duration: 120,
+    questionCount: 50,
+    difficulty: '中等',
+    difficultyClass: 'medium',
+    badgeText: '真题',
+    icon: '2',
+    totalScore: 100,
+    passingScore: 70,
+    isNew: false,
+    isRecommended: true,
+    requiredSubscription: 'free',
+    userScore: 65,
+    attemptCount: 2,
+    bookmarked: false
+  },
+  {
+    id: 'exam-2022-real',
+    title: '2022年宅建士真题',
+    description: '2022年实际考试题目，历年真题练习',
+    type: 'past',
+    year: 2022,
+    duration: 120,
+    questionCount: 50,
+    difficulty: '中等',
+    difficultyClass: 'medium',
+    badgeText: '真题',
+    icon: '3',
+    totalScore: 100,
+    passingScore: 70,
+    isNew: false,
+    isRecommended: false,
+    requiredSubscription: 'free',
+    userScore: null,
+    attemptCount: 0,
+    bookmarked: false
+  },
+  {
+    id: 'chapter-rights',
+    title: '权利关系章节测试',
+    description: '权利关系领域专项测试，重点考察民法相关知识',
+    type: 'chapter',
+    year: 2024,
+    duration: 60,
+    questionCount: 25,
+    difficulty: '简单',
+    difficultyClass: 'easy',
+    badgeText: '章节',
+    icon: '4',
+    totalScore: 100,
+    passingScore: 60,
+    isNew: true,
+    isRecommended: false,
+    requiredSubscription: 'free',
+    userScore: 85,
+    attemptCount: 1,
+    bookmarked: true
+  },
+  {
+    id: 'timed-challenge-1',
+    title: '限时挑战 #1',
+    description: '高强度时间压力测试，提升答题速度',
+    type: 'timed',
+    year: 2024,
+    duration: 90,
+    questionCount: 50,
+    difficulty: '困难',
+    difficultyClass: 'hard',
+    badgeText: '限时',
+    icon: '5',
+    totalScore: 100,
+    passingScore: 70,
+    isNew: false,
+    isRecommended: true,
+    requiredSubscription: 'free',
+    userScore: 72,
+    attemptCount: 1,
+    bookmarked: false
+  },
+  {
+    id: 'vip-exam-1',
+    title: 'VIP专属模拟 #1',
+    description: '高难度模拟考试，包含最新题型和深度分析',
+    type: 'simulation',
+    year: 2024,
+    duration: 120,
+    questionCount: 60,
+    difficulty: '困难',
+    difficultyClass: 'hard',
+    badgeText: 'VIP',
+    icon: '⭐',
+    totalScore: 100,
+    passingScore: 75,
+    isNew: true,
+    isRecommended: true,
+    requiredSubscription: 'premium',
+    userScore: null,
+    attemptCount: 0,
+    bookmarked: false
+  }
+]
 
-      return filtered
-    }
+const examStats = {
+  totalExams: 12,
+  totalAttempts: 25,
+  averageScore: 73,
+  bestScore: 92,
+  passedExams: 8,
+  totalTime: 36
+}
+
+const domainStats = [
+  { id: 'rights', name: '权利关系', score: 78 },
+  { id: 'business', name: '宅建业法', score: 85 },
+  { id: 'regulations', name: '法令制限', score: 65 },
+  { id: 'tax', name: '税・価格', score: 72 },
+  { id: 'exempt', name: '五问免除', score: 88 }
+]
+
+const recentExams = [
+  {
+    id: 'exam-2024-1',
+    title: '2024年模拟考试 #1',
+    date: '2024-01-15',
+    score: 78,
+    passingScore: 70,
+    timeUsed: 115,
+    correctCount: 39,
+    totalCount: 50
   },
-  methods: {
-    toggleMobileMenu() {
-      this.mobileMenuOpen = !this.mobileMenuOpen
-    },
-    handleResize() {
-      if (window.innerWidth > 768) {
-        this.mobileMenuOpen = false
-      }
-    },
-    switchType(typeId) {
-      this.activeType = typeId
-    },
-    getActiveTypeName() {
-      const type = this.examTypes.find(t => t.id === this.activeType)
-      return type ? type.name : '全部'
-    },
-    getTypeBadgeText(type) {
-      const typeMap = {
-        'simulation': '模拟',
-        'past': '真题',
-        'chapter': '章节',
-        'timed': '限时'
-      }
-      return typeMap[type] || type
-    },
-    getScoreClass(score) {
-      if (score >= 80) return 'excellent'
-      if (score >= 70) return 'good'
-      if (score >= 60) return 'average'
-      return 'poor'
-    },
-    canTakeExam(exam) {
-      // 检查用户是否有权限参加考试
-      if (!this.userStore.isLoggedIn) return false
-      if (exam.requiredSubscription === 'premium' && !this.userStore.isPremium) return false
-      return true
-    },
-    toggleBookmark(examId) {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以使用收藏功能')
-        return
-      }
-      
-      const exam = this.exams.find(e => e.id === examId)
-      if (exam) {
-        exam.bookmarked = !exam.bookmarked
-        
-        // 保存到本地存储
-        this.saveBookmarksToLocalStorage()
-      }
-    },
-    startExam(exam) {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以开始考试')
-        this.$router.push('/login')
-        return
-      }
-      
-      if (!this.canTakeExam(exam)) {
-        alert('您没有权限参加此考试，请升级VIP会员')
-        return
-      }
-      
-      console.log('开始考试:', exam.title)
-      // 这里应该跳转到考试页面
-      alert(`开始考试: ${exam.title}`)
-    },
-    reviewExam(exam) {
-      console.log('查看考试详情:', exam.title)
-      // 这里应该跳转到考试详情页面
-      alert(`查看考试详情: ${exam.title}`)
-    },
-    retakeExam(exam) {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以重新考试')
-        this.$router.push('/login')
-        return
-      }
-      
-      if (!this.canTakeExam(exam)) {
-        alert('您没有权限参加此考试，请升级VIP会员')
-        return
-      }
-      
-      console.log('重新考试:', exam.title)
-      // 这里应该重置考试进度并开始考试
-      if (confirm(`确定要重新参加"${exam.title}"吗？`)) {
-        this.startExam(exam)
-      }
-    },
-    startQuickExam() {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以开始快速测试')
-        this.$router.push('/login')
-        return
-      }
-      
-      // 快速测试逻辑
-      const quickExam = {
-        id: 'quick-test',
-        title: '快速能力测试',
-        description: '10道题目快速评估当前水平',
-        duration: 20,
-        questionCount: 10
-      }
-      this.startExam(quickExam)
-    },
-    showExamHistory() {
-      if (!this.userStore.isLoggedIn) {
-        alert('请先登录以查看考试记录')
-        this.$router.push('/login')
-        return
-      }
-      
-      // 显示考试历史逻辑
-      console.log('显示考试历史')
-    },
-    upgradeToPremium() {
-      alert('升级VIP会员，享受更多专属功能')
-      // 这里应该跳转到VIP升级页面
-    },
-    formatDate(dateString) {
-      const date = new Date(dateString)
-      return `${date.getMonth() + 1}月${date.getDate()}日`
-    },
-    saveBookmarksToLocalStorage() {
-      const bookmarks = this.exams
-        .filter(exam => exam.bookmarked)
-        .map(exam => exam.id)
-      
-      localStorage.setItem('examBookmarks', JSON.stringify(bookmarks))
-    },
-    loadBookmarksFromLocalStorage() {
-      const savedBookmarks = localStorage.getItem('examBookmarks')
-      if (savedBookmarks) {
-        const bookmarks = JSON.parse(savedBookmarks)
-        this.exams.forEach(exam => {
-          exam.bookmarked = bookmarks.includes(exam.id)
-        })
-      }
-    }
+  {
+    id: 'chapter-rights',
+    title: '权利关系章节测试',
+    date: '2024-01-12',
+    score: 85,
+    passingScore: 60,
+    timeUsed: 55,
+    correctCount: 21,
+    totalCount: 25
   },
-  mounted() {
-    window.addEventListener('resize', this.handleResize)
-    
-    // 从本地存储加载用户偏好
-    this.loadBookmarksFromLocalStorage()
-  },
-  beforeUnmount() {
-    window.removeEventListener('resize', this.handleResize)
+  {
+    id: 'exam-2023-real',
+    title: '2023年宅建士真题',
+    date: '2024-01-10',
+    score: 65,
+    passingScore: 70,
+    timeUsed: 118,
+    correctCount: 32,
+    totalCount: 50
+  }
+]
+
+// 计算属性
+const availableYears = computed(() => {
+  const years = [...new Set(exams.map(exam => exam.year))]
+  return years.sort((a, b) => b - a)
+})
+
+const filteredExams = computed(() => {
+  let filtered = exams
+
+  // 按类型筛选
+  if (activeType.value !== 'all') {
+    filtered = filtered.filter(exam => exam.type === activeType.value)
+  }
+
+  // 按年份筛选
+  if (selectedYear.value !== 'all') {
+    filtered = filtered.filter(exam => exam.year === parseInt(selectedYear.value))
+  }
+
+  // 按难度筛选
+  if (selectedDifficulty.value !== 'all') {
+    filtered = filtered.filter(exam => {
+      const difficultyMap = {
+        'easy': '简单',
+        'medium': '中等',
+        'hard': '困难'
+      }
+      return exam.difficulty === difficultyMap[selectedDifficulty.value]
+    })
+  }
+
+  return filtered
+})
+
+// 方法
+const getTypeCount = (typeId) => {
+  if (typeId === 'all') return exams.length
+  return exams.filter(exam => exam.type === typeId).length
+}
+
+const getTypeProgress = (typeId) => {
+  const typeExams = typeId === 'all' ? exams : exams.filter(exam => exam.type === typeId)
+  if (typeExams.length === 0) return 0
+  
+  const completed = typeExams.filter(exam => exam.userScore !== null).length
+  return Math.round((completed / typeExams.length) * 100)
+}
+
+const getActiveTypeName = () => {
+  const type = examTypes.find(t => t.id === activeType.value)
+  return type ? type.name : '全部'
+}
+
+const getScoreClass = (score) => {
+  if (score >= 80) return 'excellent'
+  if (score >= 70) return 'good'
+  if (score >= 60) return 'average'
+  return 'poor'
+}
+
+const canTakeExam = (exam) => {
+  if (!userStore.isLoggedIn) return false
+  if (exam.requiredSubscription === 'premium' && !userStore.isPremium) return false
+  return true
+}
+
+const toggleBookmark = (examId) => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以使用收藏功能')
+    openLoginDialog()
+    return
+  }
+  
+  const exam = exams.find(e => e.id === examId)
+  if (exam) {
+    exam.bookmarked = !exam.bookmarked
+    saveBookmarksToLocalStorage()
   }
 }
-</script>
 
-<style>
-/* CSS 变量定义 - 与其他模块保持一致 */
-:root {
-  --primary: #2a7960;
-  --primary-dark: #205e4a;
-  --primary-light: #e8f5f0;
-  --bg: #f6f9fc;
-  --card-bg: #ffffff;
-  --text: #0b2130;
-  --muted: #64748b;
-  --border: #e2e8f0;
-  --radius: 12px;
-  --gap: 20px;
-  --max-width: 1200px;
-  --container-padding: 20px;
+const startExam = (exam) => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以开始考试')
+    openLoginDialog()
+    return
+  }
   
-  /* 新增考试相关变量 */
-  --excellent: #10b981;
-  --good: #3b82f6;
-  --average: #f59e0b;
-  --poor: #ef4444;
-  --premium: #f59e0b;
+  if (!canTakeExam(exam)) {
+    alert('您没有权限参加此考试，请升级VIP会员')
+    return
+  }
+  
+  console.log('开始考试:', exam.title)
+  alert(`开始考试: ${exam.title}`)
 }
-</style>
+
+const reviewExam = (exam) => {
+  console.log('查看考试详情:', exam.title)
+  alert(`查看考试详情: ${exam.title}`)
+}
+
+const retakeExam = (exam) => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以重新考试')
+    openLoginDialog()
+    return
+  }
+  
+  if (!canTakeExam(exam)) {
+    alert('您没有权限参加此考试，请升级VIP会员')
+    return
+  }
+  
+  console.log('重新考试:', exam.title)
+  if (confirm(`确定要重新参加"${exam.title}"吗？`)) {
+    startExam(exam)
+  }
+}
+
+const startQuickExam = () => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以开始快速测试')
+    openLoginDialog()
+    return
+  }
+  
+  const quickExam = {
+    id: 'quick-test',
+    title: '快速能力测试',
+    description: '10道题目快速评估当前水平',
+    duration: 20,
+    questionCount: 10
+  }
+  startExam(quickExam)
+}
+
+const showExamHistory = () => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以查看考试记录')
+    openLoginDialog()
+    return
+  }
+  
+  console.log('显示考试历史')
+}
+
+const upgradeToPremium = () => {
+  alert('升级VIP会员，享受更多专属功能')
+}
+
+const switchType = (typeId) => {
+  activeType.value = typeId
+}
+
+const formatDate = (dateString) => {
+  const date = new Date(dateString)
+  return `${date.getMonth() + 1}月${date.getDate()}日`
+}
+
+const saveBookmarksToLocalStorage = () => {
+  const bookmarks = exams
+    .filter(exam => exam.bookmarked)
+    .map(exam => exam.id)
+  
+  localStorage.setItem('examBookmarks', JSON.stringify(bookmarks))
+}
+
+const loadBookmarksFromLocalStorage = () => {
+  const savedBookmarks = localStorage.getItem('examBookmarks')
+  if (savedBookmarks) {
+    const bookmarks = JSON.parse(savedBookmarks)
+    exams.forEach(exam => {
+      exam.bookmarked = bookmarks.includes(exam.id)
+    })
+  }
+}
+
+// 打开登录弹窗 - 使用全局事件
+const openLoginDialog = () => {
+  window.dispatchEvent(new CustomEvent('open-login-dialog'))
+}
+
+const toggleMobileMenu = () => {
+  mobileMenuOpen.value = !mobileMenuOpen.value
+}
+
+const handleResize = () => {
+  if (window.innerWidth > 768) {
+    mobileMenuOpen.value = false
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('resize', handleResize)
+  loadBookmarksFromLocalStorage()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+})
+</script>
 
 <style scoped>
 .exam {
   min-height: 100vh;
   background-color: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans GB", "PingFang SC", "Microsoft YaHei", "Noto Sans JP", "Noto Sans", Arial, sans-serif;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  padding-top: 20px;
 }
 
-/* ========= 布局容器 ========= */
+/* === 修复容器居中问题 === */
 .container {
-  max-width: var(--max-width);
+  max-width: var(--max-width, 1200px);
   margin: 0 auto;
-  padding: 0 var(--container-padding);
-  position: relative;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  padding: 0 var(--container-padding, 2rem);
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* ========= 顶部导航栏 ========= */
-.top-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 0;
-  position: sticky;
-  top: 0;
-  background: var(--bg);
-  z-index: 100;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  color: var(--primary-dark);
-  text-decoration: none;
-  font-size: 18px;
-}
-
-.logo .mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 800;
-  font-size: 16px;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.nav-links a {
-  color: var(--muted);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 15px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.nav-links a:hover, .nav-links a.active {
-  background: var(--primary-light);
-  color: var(--primary-dark);
-}
-
-.nav-links a.active {
-  font-weight: 700;
-}
-
-/* 用户状态样式 */
-.user-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--primary-light);
-  color: var(--primary-dark);
-}
-
-.user-avatar {
-  font-size: 18px;
-}
-
-.user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.user-name {
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.user-tier {
-  font-size: 12px;
-  opacity: 0.8;
-}
-
-.login-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.mobile-menu-toggle {
-  display: none;
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: var(--muted);
-  padding: 8px;
-  border-radius: 8px;
+/* 确保所有主要部分都有适当的间距 */
+.page-header,
+.quick-nav,
+.main-content,
+.cta-section {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 100%;
 }
 
 /* ========= 页面头部 ========= */
 .page-header {
   background: linear-gradient(135deg, rgba(42, 121, 96, 0.05), rgba(42, 121, 96, 0.02));
-  border-radius: 20px;
-  padding: 40px;
-  margin: 30px 0;
+  border-radius: var(--radius);
+  padding: 3rem 2rem;
+  margin: 2rem 0;
   text-align: center;
-  position: relative;
+  width: 100%;
 }
 
 .header-content h1 {
-  font-size: 36px;
+  font-size: 2.5rem;
   font-weight: 800;
   color: var(--primary-dark);
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 .header-content p {
-  font-size: 18px;
+  font-size: 1.125rem;
   color: var(--muted);
   max-width: 700px;
-  margin: 0 auto 30px;
+  margin: 0 auto 2rem;
   line-height: 1.6;
 }
 
@@ -976,7 +826,7 @@ export default {
 .header-stats {
   display: flex;
   justify-content: center;
-  gap: 40px;
+  gap: 3rem;
   flex-wrap: wrap;
 }
 
@@ -986,14 +836,14 @@ export default {
 
 .stat-number {
   display: block;
-  font-size: 28px;
+  font-size: 2rem;
   font-weight: 700;
   color: var(--primary);
-  margin-bottom: 4px;
+  margin-bottom: 0.25rem;
 }
 
 .stat-label {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--muted);
 }
 
@@ -1001,40 +851,43 @@ export default {
 .quick-nav {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 30px;
-  margin: 40px 0;
+  gap: 2rem;
+  margin: 3rem 0;
+  width: 100%;
 }
 
 .nav-section h3 {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 600;
   color: var(--primary-dark);
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
-.exam-type-buttons {
+.type-buttons {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 .type-btn {
   background: var(--card-bg);
   border: 2px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 1rem;
   text-align: left;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.5rem;
+  border: none;
+  font-family: inherit;
 }
 
 .type-btn:hover {
   border-color: var(--primary);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(42, 121, 96, 0.1);
+  box-shadow: var(--shadow);
 }
 
 .type-btn.active {
@@ -1051,7 +904,7 @@ export default {
   color: var(--primary-dark);
 }
 
-.type-desc {
+.type-count {
   font-size: 12px;
   color: var(--muted);
 }
@@ -1059,21 +912,21 @@ export default {
 .tool-buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 .tool-btn {
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 1rem;
   text-align: center;
   text-decoration: none;
   color: var(--text);
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.5rem;
   align-items: center;
   cursor: pointer;
   border: none;
@@ -1084,7 +937,7 @@ export default {
 .tool-btn:hover:not(:disabled) {
   border-color: var(--primary);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(42, 121, 96, 0.1);
+  box-shadow: var(--shadow);
 }
 
 .tool-btn:disabled {
@@ -1109,63 +962,76 @@ export default {
 
 /* ========= 主要内容区域 ========= */
 .main-content {
-  margin: 40px 0;
+  margin: 3rem 0;
   flex: 1;
+  width: 100%;
 }
 
-/* ========= 考试列表区域 ========= */
-.exam-list-section {
-  margin-bottom: 40px;
-}
-
+/* ========= 区域头部 ========= */
 .section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-  gap: 16px;
+  margin-bottom: 2rem;
+  width: 100%;
 }
 
 .section-header h2 {
-  font-size: 24px;
+  font-size: 2rem;
   font-weight: 700;
   color: var(--primary-dark);
-  margin: 0;
+  margin-bottom: 0.5rem;
 }
 
-.filter-options {
-  display: flex;
-  gap: 12px;
+.section-header p {
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+  max-width: 600px;
+  line-height: 1.6;
 }
 
-.filter-select {
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+.section-progress {
   background: var(--card-bg);
-  color: var(--text);
+  border-radius: var(--radius);
+  padding: 1rem;
+  max-width: 300px;
+  box-shadow: var(--shadow-sm);
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
   font-size: 14px;
-  cursor: pointer;
+  color: var(--muted);
 }
 
-.filter-select:focus {
-  outline: none;
-  border-color: var(--primary);
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
 }
 
-/* ========= 考试卡片网格 ========= */
-.exam-cards {
+.progress-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+/* ========= 考试网格 ========= */
+.exam-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+  width: 100%;
 }
 
 .exam-card {
   background: var(--card-bg);
   border-radius: var(--radius);
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(12, 35, 50, 0.06);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
   transition: all 0.3s ease;
   border: 1px solid var(--border);
   position: relative;
@@ -1173,7 +1039,8 @@ export default {
 
 .exam-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(12, 35, 50, 0.12);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary);
 }
 
 .exam-card.premium-only {
@@ -1227,46 +1094,30 @@ export default {
 .card-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 16px;
 }
 
-.exam-badges {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.badge {
+.card-badge {
+  font-size: 12px;
   padding: 4px 8px;
   border-radius: 12px;
-  font-size: 11px;
   font-weight: 600;
 }
 
-.badge.new {
-  background: #ff6b6b;
-  color: white;
-}
-
-.badge.recommended {
-  background: var(--primary);
-  color: white;
-}
-
-.badge.type {
+.card-badge.easy {
   background: var(--primary-light);
-  color: var(--primary-dark);
+  color: var(--primary);
 }
 
-.badge.premium {
-  background: var(--premium);
-  color: white;
+.card-badge.medium {
+  background: #fef3c7;
+  color: #92400e;
 }
 
-.exam-actions {
-  display: flex;
-  gap: 8px;
+.card-badge.hard {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .bookmark-btn {
@@ -1277,38 +1128,44 @@ export default {
   color: var(--muted);
   transition: color 0.3s ease;
   padding: 4px;
+  border-radius: 4px;
 }
 
-.bookmark-btn:hover:not(:disabled), .bookmark-btn.bookmarked {
-  color: #f59e0b;
+.bookmark-btn:hover {
+  color: var(--primary);
+  background: var(--primary-light);
 }
 
-.bookmark-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.card-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  background: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  color: var(--primary);
+  font-size: 18px;
+  font-weight: 600;
 }
 
-/* ========= 考试卡片内容 ========= */
-.card-content {
-  margin-bottom: 20px;
-}
-
-.exam-title {
+.card-title {
   font-size: 18px;
   font-weight: 700;
   color: var(--primary-dark);
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   line-height: 1.4;
 }
 
-.exam-description {
+.card-desc {
   color: var(--muted);
   font-size: 14px;
-  line-height: 1.5;
-  margin-bottom: 16px;
+  line-height: 1.6;
+  margin-bottom: 20px;
 }
 
-.exam-meta {
+.card-meta {
   display: flex;
   gap: 16px;
   margin-bottom: 16px;
@@ -1318,7 +1175,7 @@ export default {
 .meta-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   font-size: 13px;
   color: var(--muted);
 }
@@ -1327,55 +1184,27 @@ export default {
   font-size: 14px;
 }
 
-.meta-text {
-  font-weight: 500;
-}
-
 /* ========= 考试进度 ========= */
-.exam-progress {
+.card-progress {
   background: var(--bg);
   border-radius: 8px;
   padding: 16px;
   border: 1px solid var(--border);
+  margin-bottom: 20px;
 }
 
-.progress-info {
+.progress-text {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   margin-bottom: 8px;
-}
-
-.progress-label {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--muted);
 }
 
-.progress-score {
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.progress-score.excellent { color: var(--excellent); }
-.progress-score.good { color: var(--good); }
-.progress-score.average { color: var(--average); }
-.progress-score.poor { color: var(--poor); }
-
-.progress-bar {
-  width: 100%;
-  height: 6px;
-  background: var(--border);
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-
-.progress-fill {
-  height: 100%;
-  background: var(--primary);
-  border-radius: 3px;
-  transition: width 0.5s ease;
-}
+.progress-text .excellent { color: var(--excellent); }
+.progress-text .good { color: var(--good); }
+.progress-text .average { color: var(--average); }
+.progress-text .poor { color: var(--poor); }
 
 .progress-status {
   display: flex;
@@ -1404,25 +1233,24 @@ export default {
   color: var(--muted);
 }
 
-/* ========= 考试卡片操作 ========= */
+/* ========= 卡片操作 ========= */
 .card-actions {
   display: flex;
   gap: 8px;
 }
 
 .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  flex: 1;
   padding: 10px 16px;
   border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.3s ease;
   border: none;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  text-decoration: none;
-  flex: 1;
+  font-family: inherit;
 }
 
 .btn:disabled {
@@ -1437,6 +1265,8 @@ export default {
 
 .btn-primary:hover:not(:disabled) {
   background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(42, 121, 96, 0.3);
 }
 
 .btn-secondary {
@@ -1447,6 +1277,7 @@ export default {
 
 .btn-secondary:hover:not(:disabled) {
   background: var(--primary-light);
+  transform: translateY(-2px);
 }
 
 .btn-outline {
@@ -1467,80 +1298,68 @@ export default {
 
 .btn-upgrade:hover {
   background: #d97706;
+  transform: translateY(-2px);
 }
 
-/* ========= 无考试状态 ========= */
-.no-exams {
-  text-align: center;
-  padding: 60px 40px;
-  color: var(--muted);
+.btn-premium {
+  background: #f59e0b;
+  color: white;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
 }
 
-.no-exams-icon {
-  font-size: 64px;
-  margin-bottom: 20px;
-  opacity: 0.5;
+.btn-premium:hover {
+  background: #d97706;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
 }
 
-.no-exams h3 {
-  font-size: 20px;
-  color: var(--primary-dark);
-  margin-bottom: 8px;
-}
-
-.no-exams p {
-  font-size: 16px;
-}
-
-/* ========= 考试统计区域 ========= */
-.exam-stats-section {
-  margin-bottom: 40px;
-}
-
+/* ========= 统计区域 ========= */
 .stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+  width: 100%;
 }
 
 .stats-card {
   background: var(--card-bg);
   border-radius: var(--radius);
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(12, 35, 50, 0.06);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
 }
 
 .stats-card h3 {
-  font-size: 18px;
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--primary-dark);
-  margin-bottom: 20px;
+  margin-bottom: 1.5rem;
   text-align: center;
 }
 
 .stats-content {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 1rem;
 }
 
-.stat-item {
-  text-align: center;
-  padding: 16px;
+.stats-content .stat-item {
   background: var(--bg);
   border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
 }
 
-.stat-value {
+.stats-content .stat-value {
   display: block;
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--primary);
-  margin-bottom: 4px;
+  margin-bottom: 0.25rem;
 }
 
-.stat-label {
-  font-size: 14px;
+.stats-content .stat-label {
+  font-size: 0.875rem;
   color: var(--muted);
 }
 
@@ -1548,13 +1367,13 @@ export default {
 .domain-progress {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 1rem;
 }
 
 .domain-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .domain-info {
@@ -1564,76 +1383,67 @@ export default {
 }
 
 .domain-name {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 500;
   color: var(--text);
 }
 
 .domain-score {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--primary);
 }
 
-/* ========= 最近考试记录 ========= */
-.recent-exams-section {
-  margin-bottom: 40px;
-}
-
-.section-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--primary-dark);
-  margin-bottom: 24px;
-}
-
-.recent-exams {
+/* ========= 最近考试 ========= */
+.recent-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+  width: 100%;
 }
 
-.recent-exam-card {
+.recent-card {
   background: var(--card-bg);
   border-radius: var(--radius);
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(12, 35, 50, 0.06);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
   border: 1px solid var(--border);
 }
 
-.exam-header {
+.recent-card .card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
-.exam-header .exam-title {
-  font-size: 16px;
+.recent-card .card-title {
+  font-size: 1rem;
   margin: 0;
   flex: 1;
 }
 
 .exam-date {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   white-space: nowrap;
-  margin-left: 12px;
+  margin-left: 0.75rem;
 }
 
-.exam-result {
-  margin-bottom: 16px;
+.card-result {
+  margin-bottom: 1rem;
 }
 
 .score-display {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 0.5rem;
 }
 
 .score-display .score {
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 700;
 }
 
@@ -1644,36 +1454,61 @@ export default {
 
 .exam-details {
   display: flex;
-  gap: 16px;
-  font-size: 12px;
+  gap: 1rem;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
-.exam-actions {
-  display: flex;
-  gap: 8px;
+/* ========= 无考试状态 ========= */
+.no-exams {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--muted);
+  width: 100%;
+}
+
+.no-exams-icon {
+  font-size: 4rem;
+  margin-bottom: 1.25rem;
+  opacity: 0.5;
+}
+
+.no-exams h3 {
+  font-size: 1.25rem;
+  color: var(--primary-dark);
+  margin-bottom: 0.5rem;
+}
+
+.no-exams p {
+  font-size: 1rem;
 }
 
 /* ========= 登录提示 ========= */
-.login-prompt {
+.login-prompt, .upgrade-prompt {
   background: var(--card-bg);
   border-radius: var(--radius);
-  padding: 40px;
+  padding: 2.5rem;
   text-align: center;
-  margin: 40px 0;
+  margin: 2.5rem 0;
   border: 1px solid var(--border);
+  width: 100%;
+}
+
+.upgrade-prompt {
+  border: 2px solid #f59e0b;
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
 }
 
 .prompt-content h3 {
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--primary-dark);
-  margin-bottom: 12px;
+  margin-bottom: 0.75rem;
 }
 
 .prompt-content p {
   color: var(--muted);
-  margin-bottom: 20px;
+  margin-bottom: 1.25rem;
   max-width: 500px;
   margin-left: auto;
   margin-right: auto;
@@ -1682,21 +1517,22 @@ export default {
 /* ========= 底部行动号召 ========= */
 .cta-section {
   text-align: center;
-  padding: 40px 0;
-  margin: 60px 0 40px;
+  padding: 2.5rem 0;
+  margin: 3rem 0 2.5rem;
+  width: 100%;
 }
 
 .cta-section h2 {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--primary-dark);
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 .cta-section p {
-  font-size: 16px;
+  font-size: 1rem;
   color: var(--muted);
-  margin-bottom: 24px;
+  margin-bottom: 1.5rem;
   max-width: 500px;
   margin-left: auto;
   margin-right: auto;
@@ -1705,20 +1541,9 @@ export default {
 
 .cta-buttons {
   display: flex;
-  gap: 16px;
+  gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
-}
-
-/* ========= 页脚 ========= */
-.footer {
-  text-align: center;
-  padding: 40px 0;
-  margin-top: 60px;
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 14px;
-  width: 100%;
 }
 
 /* ========= 响应式设计 ========= */
@@ -1727,7 +1552,7 @@ export default {
     grid-template-columns: 1fr;
   }
   
-  .exam-cards {
+  .exam-grid {
     grid-template-columns: repeat(2, 1fr);
   }
   
@@ -1735,52 +1560,33 @@ export default {
     grid-template-columns: 1fr;
   }
   
-  .recent-exams {
+  .recent-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .container {
+    padding: 0 var(--container-padding, 1.5rem);
   }
 }
 
 @media (max-width: 768px) {
-  .nav-links {
-    display: none;
-    position: absolute;
-    top: 70px;
-    left: 0;
-    right: 0;
-    background: white;
-    flex-direction: column;
-    padding: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    border-radius: 12px;
-    margin: 0 20px;
-    z-index: 100;
-  }
-  
-  .nav-links.mobile-show {
-    display: flex;
-  }
-  
-  .mobile-menu-toggle {
-    display: block;
-  }
-  
   .page-header {
-    padding: 30px 20px;
+    padding: 2rem 1rem;
   }
   
   .header-content h1 {
-    font-size: 28px;
+    font-size: 2rem;
   }
   
   .header-content p {
-    font-size: 16px;
+    font-size: 1rem;
   }
   
-  .header-stats {
-    gap: 20px;
+  .exam-grid {
+    grid-template-columns: 1fr;
   }
   
-  .exam-type-buttons {
+  .type-buttons {
     grid-template-columns: 1fr;
   }
   
@@ -1788,25 +1594,11 @@ export default {
     grid-template-columns: 1fr;
   }
   
-  .exam-cards {
-    grid-template-columns: 1fr;
-  }
-  
-  .section-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .filter-options {
-    width: 100%;
-    justify-content: flex-start;
-  }
-  
   .stats-content {
     grid-template-columns: 1fr;
   }
   
-  .recent-exams {
+  .recent-grid {
     grid-template-columns: 1fr;
   }
   
@@ -1818,53 +1610,40 @@ export default {
     flex-direction: column;
     align-items: center;
   }
+  
+  .btn {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .container {
+    padding: 0 var(--container-padding, 1rem);
+  }
 }
 
 @media (max-width: 480px) {
-  .page-header {
-    padding: 20px 16px;
-  }
-  
-  .header-content h1 {
-    font-size: 24px;
-  }
-  
-  .header-content p {
-    font-size: 16px;
-  }
-  
   .header-stats {
     flex-direction: column;
-    gap: 16px;
+    gap: 1rem;
   }
   
   .stat-number {
-    font-size: 24px;
-  }
-  
-  .exam-meta {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .exam-header {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .exam-date {
-    margin-left: 0;
-  }
-  
-  .score-display {
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-start;
+    font-size: 1.75rem;
   }
   
   .exam-details {
     flex-direction: column;
-    gap: 4px;
+    gap: 0.25rem;
+  }
+  
+  .score-display {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+  
+  .container {
+    padding: 0 1rem;
   }
 }
 </style>

@@ -3,6 +3,9 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 
+
+import './assets/main.css'
+
 // 调试信息
 console.log('🚀 Vue应用开始初始化...')
 

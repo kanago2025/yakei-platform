@@ -1,13 +1,10 @@
 name = "yakei-platform"
 compatibility_date = "2024-01-01"
+account_id = "7d83eb84684ddc7adec64a72505f69f0"
 
 [[r2_buckets]]
 binding = "VIDEOS_BUCKET"
 bucket_name = "yakei-videos"
-preview_bucket_name = "yakei-videos-preview"
 
-[env.production]
-# 生产环境配置
-
-[env.staging]
-# 测试环境配置
+[vars]
+ENVIRONMENT = "development"

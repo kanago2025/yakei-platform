@@ -230,11 +230,11 @@ const learnedTopicsCount = computed(() => {
 // 计算领域进度
 const calculateDomainProgress = (domainId) => {
   const domainMapping = {
-    'rights': ['rights_agency', 'contract_law', 'mortgage', 'agency_law'],
-    'business': ['important_matters'],
-    'regulations': ['land_building'],
-    'tax': ['tax_system'],
-    'exempt': ['registration']
+    'rights': ['declaration_ofintent', 'rights_capacity', 'agency_law'],
+    'business': ['business_meaning', 'office_requirements', 'agent', 'deposit'],
+    'regulations': ['land_building', 'regulations_building'],
+    'tax': ['tax_system', 'tax_fixed'],
+    'exempt': ['registration', 'exempt_market']
   }
   
   const domainTopics = domainMapping[domainId] || []
@@ -248,13 +248,18 @@ const calculateDomainProgress = (domainId) => {
   return Math.round(totalProgress / domainTopics.length)
 }
 
-// 导航到具体领域
+// 导航到具体领域 - 修复版本
 const navigateToDomain = (domainId) => {
   if (!userStore.isLoggedIn) {
     openLoginDialog()
     return
   }
-  router.push(`/notes?domain=${domainId}`)
+  
+  // 使用 router.push 并传递查询参数
+  router.push({
+    path: '/notes',
+    query: { domain: domainId }
+  })
 }
 
 // 显示平台介绍
@@ -311,25 +316,33 @@ onMounted(() => {
 .home {
   min-height: 100vh;
   background-color: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans GB", "PingFang SC", "Microsoft YaHei", "Noto Sans JP", "Noto Sans", Arial, sans-serif;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  padding-top: 20px;
 }
 
+/* === 修复容器居中问题 === */
 .container {
-  max-width: 1200px;
+  max-width: var(--max-width, 1200px);
   margin: 0 auto;
-  padding: 0 var(--container-padding, 20px);
+  padding: 0 var(--container-padding, 2rem);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 确保所有主要部分都有适当的间距 */
+.hero-banner,
+.main-content {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 100%;
 }
 
 /* ========= 欢迎横幅 ========= */
 .hero-banner {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: white;
-  padding: 3rem 0;
+  padding: 4rem 0;
   margin-top: 0;
+  width: 100%;
 }
 
 .hero-content {
@@ -338,11 +351,12 @@ onMounted(() => {
   align-items: center;
   flex-wrap: wrap;
   gap: 2rem;
+  width: 100%;
 }
 
 .welcome-message h1 {
   margin: 0 0 1rem 0;
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: 700;
 }
 
@@ -406,14 +420,63 @@ onMounted(() => {
   gap: 1rem;
 }
 
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.btn-icon {
+  font-size: 1.2rem;
+}
+
 /* ========= 主要内容 ========= */
 .main-content {
-  padding: 3rem 0;
+  padding: 4rem 0;
+  flex: 1;
+  width: 100%;
 }
 
 .section-header {
   text-align: center;
   margin-bottom: 3rem;
+  width: 100%;
 }
 
 .section-header h2 {
@@ -435,6 +498,7 @@ onMounted(() => {
   text-align: center;
   padding: 3rem 0;
   margin-bottom: 3rem;
+  width: 100%;
 }
 
 .intro-content h1 {
@@ -468,69 +532,26 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 1rem 2rem;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  border: none;
-  cursor: pointer;
-}
-
-.btn-primary {
-  background: var(--primary);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--primary-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(42, 121, 96, 0.3);
-}
-
-.btn-secondary {
-  background: white;
-  color: var(--primary);
-  border: 2px solid var(--primary);
-}
-
-.btn-secondary:hover {
-  background: var(--primary-light);
-  transform: translateY(-2px);
-}
-
-.btn-sm {
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-}
-
-.btn-icon {
-  font-size: 1.2rem;
-}
-
 /* ========= 五大分野 ========= */
 .domains-section {
   padding: 3rem 0;
   margin-bottom: 3rem;
+  width: 100%;
 }
 
 .domains-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
+  width: 100%;
 }
 
 .domain-card {
-  background: white;
+  background: var(--card-bg);
   padding: 2rem;
-  border-radius: 16px;
+  border-radius: var(--radius);
   text-align: center;
-  box-shadow: 0 4px 20px rgba(12, 35, 50, 0.08);
+  box-shadow: var(--shadow);
   border: 1px solid var(--border);
   transition: all 0.3s ease;
   cursor: pointer;
@@ -540,7 +561,7 @@ onMounted(() => {
 
 .domain-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 30px rgba(12, 35, 50, 0.12);
+  box-shadow: var(--shadow-lg);
   border-color: var(--primary);
 }
 
@@ -596,12 +617,14 @@ onMounted(() => {
 .learning-flow {
   padding: 3rem 0;
   margin-bottom: 3rem;
+  width: 100%;
 }
 
 .flow-steps {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 2rem;
+  width: 100%;
 }
 
 .flow-step {
@@ -638,20 +661,22 @@ onMounted(() => {
 /* ========= 快速开始 ========= */
 .quick-start {
   padding: 3rem 0;
+  width: 100%;
 }
 
 .quick-actions {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
+  width: 100%;
 }
 
 .action-card {
-  background: white;
+  background: var(--card-bg);
   padding: 2rem;
-  border-radius: 16px;
+  border-radius: var(--radius);
   text-align: center;
-  box-shadow: 0 4px 20px rgba(12, 35, 50, 0.08);
+  box-shadow: var(--shadow);
   border: 1px solid var(--border);
   transition: all 0.3s ease;
   text-decoration: none;
@@ -661,7 +686,7 @@ onMounted(() => {
 
 .action-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 30px rgba(12, 35, 50, 0.12);
+  box-shadow: var(--shadow-lg);
   border-color: var(--primary);
 }
 
@@ -699,6 +724,10 @@ onMounted(() => {
   .domains-grid,
   .quick-actions {
     grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .container {
+    padding: 0 var(--container-padding, 1.5rem);
   }
 }
 
@@ -740,11 +769,15 @@ onMounted(() => {
   .flow-steps {
     grid-template-columns: 1fr;
   }
+  
+  .container {
+    padding: 0 var(--container-padding, 1rem);
+  }
 }
 
 @media (max-width: 480px) {
   .container {
-    padding: 0 15px;
+    padding: 0 1rem;
   }
   
   .section-header h2 {

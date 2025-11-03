@@ -1,35 +1,19 @@
+<!-- src/views/Video.vue -->
 <template>
   <div class="video">
     <div class="container">
-      <!-- 顶部导航栏 -->
-      <header class="top-nav">
-        <router-link to="/" class="logo">
-          <span class="mark">宅</span>
-          <span class="name">宅学苑</span>
-        </router-link>
-        
-        <nav class="nav-links" :class="{ 'mobile-show': mobileMenuOpen }">
-          <router-link to="/">首页</router-link>
-          <router-link to="/notes">中文笔记</router-link>
-          <router-link to="/video" class="active">视频学习</router-link>
-          <router-link to="/practice">强化练习</router-link>
-          <router-link to="/exam">真题模拟</router-link>
-          <router-link to="/community">学习社群</router-link>
-          <router-link to="/dashboard">学习进度</router-link>
-          <router-link to="/login" class="login-btn">登录 / 注册</router-link>
-        </nav>
-        
-        <button class="mobile-menu-toggle" @click="toggleMobileMenu">
-          <span class="menu-icon">☰</span>
-        </button>
-      </header>
-
       <!-- 页面头部 -->
       <div class="page-header">
         <div class="header-content">
-          <div class="header-badge">视频课程</div>
-          <h1>专业视频讲解，轻松掌握考点</h1>
-          <p>深度解析宅建士考试五大分野知识点，配合图文笔记和强化练习，建立完整的知识体系</p>
+          <h1>视频学习</h1>
+          <p>专业视频讲解，轻松掌握考点，配合图文笔记和强化练习，建立完整的知识体系</p>
+          
+          <!-- VIP用户专属提示 -->
+          <div v-if="userStore.isPremium" class="premium-badge">
+            <span class="badge-icon">⭐</span>
+            <span>VIP会员可享受高清视频和无广告体验</span>
+          </div>
+          
           <div class="header-stats">
             <div class="stat-item">
               <span class="stat-number">{{ totalVideos }}</span>
@@ -49,50 +33,46 @@
             </div>
           </div>
         </div>
-        <div class="header-decoration">
-          <div class="decoration-item">🎬</div>
-          <div class="decoration-item">📚</div>
-          <div class="decoration-item">🎯</div>
-        </div>
       </div>
 
-      <!-- 学习进度概览 -->
-      <div class="progress-overview">
-        <div class="overview-header">
-          <h2>学习进度概览</h2>
-          <div class="overall-progress">
-            <span class="progress-text">整体进度 {{ overallProgress }}%</span>
-            <div class="progress-bar-large">
-              <div 
-                class="progress-fill-large" 
-                :style="{ width: overallProgress + '%' }"
-              ></div>
-            </div>
+      <!-- 快速导航 -->
+      <div class="quick-nav">
+        <div class="nav-section">
+          <h3>按分野学习</h3>
+          <div class="domain-buttons">
+            <button 
+              v-for="domain in domains" 
+              :key="domain.id"
+              class="domain-btn" 
+              :class="{ active: activeDomain === domain.id }"
+              @click="switchDomain(domain.id)"
+            >
+              <span class="domain-icon">{{ domain.icon }}</span>
+              <span class="domain-name">{{ domain.name }}</span>
+              <span class="domain-count">{{ getDomainVideoCount(domain.id) }}个视频</span>
+            </button>
           </div>
         </div>
-        <div class="domain-progress-grid">
-          <div 
-            v-for="domain in domains" 
-            :key="domain.id"
-            class="domain-progress-card"
-            @click="switchDomain(domain.id)"
-          >
-            <div class="domain-info">
-              <span class="domain-icon">{{ domain.icon }}</span>
-              <div class="domain-details">
-                <h3>{{ domain.name }}</h3>
-                <span class="video-count">{{ getDomainVideoCount(domain.id) }}个视频</span>
-              </div>
-            </div>
-            <div class="domain-progress">
-              <span class="progress-percent">{{ getDomainProgress(domain.id) }}%</span>
-              <div class="progress-bar-mini">
-                <div 
-                  class="progress-fill-mini" 
-                  :style="{ width: getDomainProgress(domain.id) + '%' }"
-                ></div>
-              </div>
-            </div>
+        
+        <div class="nav-section">
+          <h3>学习工具</h3>
+          <div class="tool-buttons">
+            <router-link to="/notes" class="tool-btn">
+              <span class="tool-icon">📚</span>
+              <span>中文笔记</span>
+            </router-link>
+            <router-link to="/practice" class="tool-btn">
+              <span class="tool-icon">🎯</span>
+              <span>强化练习</span>
+            </router-link>
+            <router-link to="/exam" class="tool-btn">
+              <span class="tool-icon">📝</span>
+              <span>真题模拟</span>
+            </router-link>
+            <router-link to="/dashboard" class="tool-btn">
+              <span class="tool-icon">📊</span>
+              <span>学习进度</span>
+            </router-link>
           </div>
         </div>
       </div>
@@ -100,15 +80,29 @@
       <!-- 主要内容区域 -->
       <main class="main-content">
         <!-- 视频播放区域 -->
-        <div class="video-player-section">
-          <div class="video-container">
-            <!-- 视频播放器 -->
+        <div class="video-section">
+          <div class="section-header">
+            <h2>{{ getActiveDomainName() }}视频课程</h2>
+            <p>选择视频开始学习，系统化掌握知识点</p>
+            <div class="section-progress">
+              <div class="progress-info">
+                <span>学习进度</span>
+                <span>{{ getDomainProgress(activeDomain) }}%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" :style="{ width: getDomainProgress(activeDomain) + '%' }"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 视频播放器 -->
+          <div class="video-player-container">
             <div class="video-player" v-if="!currentVideo.src">
               <div class="video-placeholder">
                 <div class="placeholder-content">
                   <div class="placeholder-icon">📺</div>
                   <h3>选择视频开始学习</h3>
-                  <p>从右侧视频列表中选择一个视频课程开始您的学习之旅</p>
+                  <p>从视频列表中选择一个视频课程开始您的学习之旅</p>
                   <div class="placeholder-features">
                     <div class="feature-item">
                       <span class="feature-icon">🎯</span>
@@ -133,8 +127,9 @@
                 <div class="video-title-section">
                   <h2 class="video-title">{{ currentVideo.title }}</h2>
                   <div class="video-tags">
-                    <span class="video-tag" :class="currentVideo.level">{{ currentVideo.level }}</span>
+                    <span class="video-tag" :class="currentVideo.difficultyClass">{{ currentVideo.level }}</span>
                     <span class="video-tag domain">{{ currentVideo.domain }}</span>
+                    <span class="video-tag duration">⏱️ {{ currentVideo.duration }}</span>
                   </div>
                 </div>
                 <div class="video-actions">
@@ -143,49 +138,15 @@
                     :class="{ active: currentVideo.bookmarked }"
                     @click="toggleBookmark(currentVideo)"
                   >
-                    <span class="btn-icon">{{ currentVideo.bookmarked ? '⭐' : '☆' }}</span>
+                    <span class="btn-icon">{{ currentVideo.bookmarked ? '★' : '☆' }}</span>
                     <span class="btn-text">{{ currentVideo.bookmarked ? '已收藏' : '收藏' }}</span>
                   </button>
-                </div>
-              </div>
-              
-              <!-- 视频元信息 -->
-              <div class="video-meta-info">
-                <div class="meta-grid">
-                  <div class="meta-item">
-                    <span class="meta-icon">⏱️</span>
-                    <div class="meta-content">
-                      <span class="meta-label">时长</span>
-                      <span class="meta-value">{{ currentVideo.duration }}</span>
-                    </div>
-                  </div>
-                  <div class="meta-item">
-                    <span class="meta-icon">📅</span>
-                    <div class="meta-content">
-                      <span class="meta-label">更新日期</span>
-                      <span class="meta-value">{{ currentVideo.updateDate }}</span>
-                    </div>
-                  </div>
-                  <div class="meta-item">
-                    <span class="meta-icon">👁️</span>
-                    <div class="meta-content">
-                      <span class="meta-label">观看次数</span>
-                      <span class="meta-value">{{ currentVideo.views || 0 }}</span>
-                    </div>
-                  </div>
-                  <div class="meta-item">
-                    <span class="meta-icon">💯</span>
-                    <div class="meta-content">
-                      <span class="meta-label">完成状态</span>
-                      <span class="meta-value">{{ currentVideo.progress === 100 ? '已完成' : '学习中' }}</span>
-                    </div>
-                  </div>
                 </div>
               </div>
 
               <!-- 视频播放器 -->
               <div class="video-wrapper">
-                <div class="video-player-container">
+                <div class="video-player-main">
                   <video 
                     :key="currentVideo.id"
                     ref="videoPlayer"
@@ -195,15 +156,27 @@
                     @pause="onVideoPause"
                     @ended="onVideoEnded"
                     @timeupdate="onTimeUpdate"
+                    @loadedmetadata="onVideoLoaded"
                     preload="metadata"
                   >
                     <source :src="getVideoUrl(currentVideo.src)" type="video/mp4">
                     您的浏览器不支持视频播放。
                   </video>
-                  <div class="video-overlay" v-if="!videoPlaying">
+                  <div class="video-overlay" v-if="!videoPlaying && currentVideo.lastPosition === 0">
                     <button class="play-button" @click="playVideo">
                       <span class="play-icon">▶</span>
                     </button>
+                  </div>
+                  <div class="resume-overlay" v-if="!videoPlaying && currentVideo.lastPosition > 0">
+                    <div class="resume-content">
+                      <p>上次观看到 {{ formatTime(currentVideo.lastPosition) }}</p>
+                      <button class="btn btn-primary" @click="playVideo">
+                        ▶ 继续观看
+                      </button>
+                      <button class="btn btn-outline" @click="restartVideo">
+                        ↺ 重新开始
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -212,19 +185,18 @@
               <div class="learning-progress">
                 <div class="progress-header">
                   <h4>学习进度</h4>
-                  <span class="progress-percent">{{ currentVideo.progress }}%</span>
+                  <span class="progress-percent">{{ currentVideoProgress }}%</span>
                 </div>
                 <div class="progress-bar">
                   <div 
                     class="progress-fill" 
-                    :style="{ width: currentVideo.progress + '%' }"
+                    :style="{ width: currentVideoProgress + '%' }"
                   ></div>
                 </div>
-                <div class="progress-actions" v-if="currentVideo.progress === 100">
-                  <div class="completion-badge">
-                    <span class="badge-icon">✅</span>
-                    <span class="badge-text">恭喜！您已完成本视频的学习</span>
-                  </div>
+                <div class="progress-stats">
+                  <span class="stat">已观看: {{ formatTime(currentVideo.totalWatchDuration) }}</span>
+                  <span class="stat">最后位置: {{ formatTime(currentVideo.lastPosition) }}</span>
+                  <span class="stat" v-if="currentVideo.completed">✅ 已完成</span>
                 </div>
               </div>
 
@@ -242,10 +214,10 @@
                   <router-link 
                     :to="`/practice?video=${currentVideo.id}`" 
                     class="btn btn-secondary"
-                    :class="{ disabled: currentVideo.progress < 100 }"
+                    :class="{ disabled: !currentVideo.completed }"
                   >
                     <span class="btn-icon">🎯</span>
-                    <span class="btn-text">{{ currentVideo.progress === 100 ? '开始练习' : '先完成观看' }}</span>
+                    <span class="btn-text">{{ currentVideo.completed ? '开始练习' : '先完成观看' }}</span>
                   </router-link>
                   <button class="btn btn-outline" @click="continueToNext">
                     <span class="btn-icon">⏭️</span>
@@ -364,14 +336,11 @@
             </div>
           </div>
 
-          <!-- 视频列表侧边栏 -->
-          <aside class="video-sidebar">
-            <div class="sidebar-header">
-              <h2 class="sidebar-title">
-                <span class="title-icon">🎬</span>
-                视频课程
-              </h2>
-              <div class="sidebar-controls">
+          <!-- 视频列表 -->
+          <div class="video-list-section">
+            <div class="section-header">
+              <h3>视频课程列表</h3>
+              <div class="list-controls">
                 <div class="search-box">
                   <input 
                     v-model="searchQuery" 
@@ -381,222 +350,168 @@
                   >
                   <span class="search-icon">🔍</span>
                 </div>
-                <div class="view-options">
-                  <button 
-                    class="view-option" 
-                    :class="{ active: viewMode === 'list' }"
-                    @click="viewMode = 'list'"
-                  >
-                    📋
-                  </button>
-                  <button 
-                    class="view-option" 
-                    :class="{ active: viewMode === 'grid' }"
-                    @click="viewMode = 'grid'"
-                  >
-                    ◼◼
-                  </button>
-                </div>
-              </div>
-              <div class="sidebar-stats">
-                <div class="stat-item">
-                  <span class="stat-label">共</span>
-                  <span class="stat-value">{{ filteredVideos.length }}</span>
-                  <span class="stat-label">个视频</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">已学</span>
-                  <span class="stat-value">{{ completedVideos }}</span>
-                  <span class="stat-label">个</span>
+                <div class="filter-options">
+                  <select v-model="filterStatus" class="filter-select">
+                    <option value="all">全部视频</option>
+                    <option value="in-progress">进行中</option>
+                    <option value="completed">已完成</option>
+                    <option value="bookmarked">已收藏</option>
+                  </select>
                 </div>
               </div>
             </div>
-            
-            <div class="video-list-container">
-              <!-- 快速筛选 -->
-              <div class="quick-filters">
-                <button 
-                  class="filter-btn" 
-                  :class="{ active: filterStatus === 'all' }"
-                  @click="filterStatus = 'all'"
-                >
-                  全部
-                </button>
-                <button 
-                  class="filter-btn" 
-                  :class="{ active: filterStatus === 'in-progress' }"
-                  @click="filterStatus = 'in-progress'"
-                >
-                  进行中
-                </button>
-                <button 
-                  class="filter-btn" 
-                  :class="{ active: filterStatus === 'completed' }"
-                  @click="filterStatus = 'completed'"
-                >
-                  已完成
-                </button>
-                <button 
-                  class="filter-btn" 
-                  :class="{ active: filterStatus === 'bookmarked' }"
-                  @click="filterStatus = 'bookmarked'"
-                >
-                  已收藏
-                </button>
-              </div>
 
-              <!-- 视频列表 -->
-              <div class="video-list" :class="[viewMode]">
-                <div 
-                  v-for="category in filteredCategories" 
-                  :key="category.id"
-                  class="video-category"
-                >
-                  <div class="category-header" @click="toggleCategory(category.id)">
-                    <div class="category-info">
-                      <span class="category-icon">📁</span>
-                      <span class="category-name">{{ category.name }}</span>
-                    </div>
-                    <div class="category-meta">
-                      <span class="category-progress">
-                        {{ getCategoryCompletedCount(category) }}/{{ category.videos.length }}
-                      </span>
-                      <span class="collapse-icon">
-                        {{ category.expanded ? '−' : '+' }}
-                      </span>
-                    </div>
+            <div class="video-grid">
+              <div 
+                v-for="video in filteredVideos" 
+                :key="video.id"
+                class="video-card"
+                :class="{
+                  'active': currentVideo.id === video.id,
+                  'completed': video.completed,
+                  'in-progress': video.totalWatchDuration > 0 && !video.completed,
+                  'new': video.isNew
+                }"
+                @click="selectVideo(video)"
+              >
+                <div class="card-header">
+                  <div class="video-badges">
+                    <span v-if="video.isNew" class="badge new">新</span>
+                    <span class="badge level" :class="video.difficultyClass">{{ video.level }}</span>
+                    <span v-if="video.bookmarked" class="badge bookmarked">⭐</span>
                   </div>
-                  <div class="video-items" v-show="category.expanded">
-                    <div 
-                      v-for="video in category.videos" 
-                      :key="video.id"
-                      :class="['video-item', viewMode, { 
-                        active: currentVideo.id === video.id,
-                        completed: video.progress === 100,
-                        bookmarked: video.bookmarked,
-                        'in-progress': video.progress > 0 && video.progress < 100
-                      }]"
-                      @click="selectVideo(video)"
+                  <div class="video-actions">
+                    <button 
+                      class="bookmark-btn"
+                      :class="{ bookmarked: video.bookmarked }"
+                      @click.stop="toggleBookmark(video)"
                     >
-                      <div class="video-item-main">
-                        <div class="video-item-icon">
-                          {{ getVideoIcon(video) }}
-                        </div>
-                        <div class="video-item-content">
-                          <div class="video-item-header">
-                            <h4 class="video-item-title">
-                              {{ video.title }}
-                              <span v-if="video.bookmarked" class="bookmark-indicator">⭐</span>
-                              <span v-if="video.progress === 100" class="completed-indicator">✅</span>
-                            </h4>
-                            <span class="video-duration">{{ video.duration }}</span>
-                          </div>
-                          <div class="video-item-meta">
-                            <span class="video-level" :class="video.level">{{ video.level }}</span>
-                            <span class="video-domain">{{ video.domain }}</span>
-                          </div>
-                          <div class="video-item-footer" v-if="video.progress > 0">
-                            <div class="video-progress">
-                              <div class="progress-bar-mini">
-                                <div 
-                                  class="progress-fill-mini" 
-                                  :style="{ width: video.progress + '%' }"
-                                ></div>
-                              </div>
-                              <span class="progress-text">{{ video.progress }}%</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="video-item-actions">
-                        <button 
-                          class="item-action-btn"
-                          @click.stop="toggleBookmark(video)"
-                          :title="video.bookmarked ? '取消收藏' : '收藏'"
-                        >
-                          {{ video.bookmarked ? '⭐' : '☆' }}
-                        </button>
-                      </div>
+                      {{ video.bookmarked ? '★' : '☆' }}
+                    </button>
+                  </div>
+                </div>
+
+                <div class="card-content">
+                  <div class="video-icon">{{ getVideoIcon(video) }}</div>
+                  <h3 class="video-title">{{ video.title }}</h3>
+                  <p class="video-desc">{{ video.description }}</p>
+                  
+                  <div class="video-meta">
+                    <span class="meta-item">
+                      <span class="meta-icon">⏱️</span>
+                      {{ video.duration }}
+                    </span>
+                    <span class="meta-item">
+                      <span class="meta-icon">📅</span>
+                      {{ video.updateDate }}
+                    </span>
+                  </div>
+                  
+                  <!-- 对齐项目圣经的video_watch_logs字段 -->
+                  <div class="video-progress" v-if="video.totalWatchDuration > 0">
+                    <div class="progress-text">
+                      <span>学习进度</span>
+                      <span>{{ Math.round((video.lastPosition / video.totalDuration) * 100) }}%</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div 
+                        class="progress-fill" 
+                        :style="{ width: Math.round((video.lastPosition / video.totalDuration) * 100) + '%' }"
+                      ></div>
+                    </div>
+                    <div class="watch-stats">
+                      <span class="watch-stat">已观看: {{ formatTime(video.totalWatchDuration) }}</span>
+                      <span class="watch-stat" v-if="video.completed">✅ 已完成</span>
                     </div>
                   </div>
                 </div>
+
+                <div class="card-actions">
+                  <button 
+                    class="btn btn-primary"
+                    @click.stop="selectVideo(video)"
+                  >
+                    {{ getVideoActionText(video) }}
+                  </button>
+                  <router-link 
+                    :to="video.notesLink" 
+                    class="btn btn-outline"
+                    v-if="video.notesLink"
+                  >
+                    查看笔记
+                  </router-link>
+                </div>
               </div>
             </div>
-          </aside>
+
+            <div v-if="filteredVideos.length === 0" class="no-videos">
+              <div class="no-videos-icon">🎬</div>
+              <h3>暂无相关视频</h3>
+              <p>请尝试调整搜索条件或选择其他领域</p>
+            </div>
+          </div>
         </div>
 
-        <!-- 推荐学习路径 -->
-        <section class="learning-path" v-if="recommendedPath.length">
+        <!-- 学习统计 -->
+        <section class="stats-section" v-if="userStore.isLoggedIn">
           <div class="section-header">
-            <h2 class="section-title">推荐学习路径</h2>
-            <p class="section-desc">根据您的学习进度智能推荐接下来的学习内容</p>
+            <h2>学习统计</h2>
+            <p>跟踪您的学习进度和成就</p>
           </div>
-          <div class="path-steps">
-            <div 
-              v-for="(step, index) in recommendedPath" 
-              :key="step.id"
-              class="path-step"
-              :class="{ completed: step.completed, current: step.current }"
-            >
-              <div class="step-number">{{ index + 1 }}</div>
-              <div class="step-content">
-                <h3 class="step-title">{{ step.title }}</h3>
-                <p class="step-desc">{{ step.description }}</p>
-                <div class="step-meta">
-                  <span class="step-duration">{{ step.duration }}</span>
-                  <span class="step-level" :class="step.level">{{ step.level }}</span>
+
+          <div class="stats-grid">
+            <div class="stats-card">
+              <h3>总体统计</h3>
+              <div class="stats-content">
+                <div class="stat-item">
+                  <div class="stat-value">{{ learningStats.days }}</div>
+                  <div class="stat-label">学习天数</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value">{{ Math.round(totalWatchDuration / 3600) }}h</div>
+                  <div class="stat-label">总学习时长</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value">{{ completedVideos }}/{{ totalVideos }}</div>
+                  <div class="stat-label">完成视频</div>
+                </div>
+                <div class="stat-item">
+                  <div class="stat-value">{{ bookmarkedVideos }}</div>
+                  <div class="stat-label">收藏视频</div>
                 </div>
               </div>
-              <button 
-                class="step-action"
-                @click="selectVideo(step)"
-                :disabled="!step.available"
-              >
-                {{ step.completed ? '已完成' : step.current ? '继续学习' : '开始学习' }}
-              </button>
+            </div>
+
+            <div class="stats-card">
+              <h3>领域进度</h3>
+              <div class="domain-progress">
+                <div 
+                  v-for="domain in domainStats" 
+                  :key="domain.id"
+                  class="domain-item"
+                >
+                  <div class="domain-info">
+                    <span class="domain-name">{{ domain.name }}</span>
+                    <span class="domain-score">{{ domain.score }}%</span>
+                  </div>
+                  <div class="progress-bar">
+                    <div 
+                      class="progress-fill" 
+                      :style="{ width: domain.score + '%' }"
+                    ></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        <!-- 学习统计 -->
-        <section class="learning-stats">
-          <div class="section-header">
-            <h2 class="section-title">学习统计</h2>
-            <p class="section-desc">跟踪您的学习进度和成就</p>
-          </div>
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-icon">📅</div>
-              <div class="stat-content">
-                <h3>学习天数</h3>
-                <span class="stat-value">{{ learningStats.days }}</span>
-                <span class="stat-label">连续学习</span>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">⏱️</div>
-              <div class="stat-content">
-                <h3>总学习时长</h3>
-                <span class="stat-value">{{ learningStats.totalHours }}</span>
-                <span class="stat-label">小时</span>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">🎯</div>
-              <div class="stat-content">
-                <h3>完成视频</h3>
-                <span class="stat-value">{{ completedVideos }}</span>
-                <span class="stat-label">/ {{ totalVideos }} 个</span>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">⭐</div>
-              <div class="stat-content">
-                <h3>收藏视频</h3>
-                <span class="stat-value">{{ bookmarkedVideos }}</span>
-                <span class="stat-label">个</span>
-              </div>
-            </div>
+        <!-- 未登录提示 -->
+        <section v-if="!userStore.isLoggedIn" class="login-prompt">
+          <div class="prompt-content">
+            <h3>登录以保存学习记录</h3>
+            <p>登录后可以保存您的学习进度、收藏喜欢的视频，并获得个性化学习建议</p>
+            <button class="btn btn-primary" @click="openLoginDialog">立即登录</button>
           </div>
         </section>
       </main>
@@ -604,971 +519,974 @@
       <!-- 底部行动号召 -->
       <section class="cta-section">
         <div class="cta-content">
-          <h2>准备好系统化学习了吗？</h2>
-          <p>配合中文笔记和强化练习，建立完整的知识体系，快速提升考试成绩</p>
+          <h2>系统化学习，高效掌握知识点</h2>
+          <p>通过专业视频讲解和深度解析，配合中文笔记和强化练习，快速建立完整的知识体系</p>
           <div class="cta-buttons">
-            <router-link to="/notes" class="btn btn-primary">
-              <span class="btn-icon">📚</span>
-              <span class="btn-text">查看中文笔记</span>
-            </router-link>
-            <router-link to="/practice" class="btn btn-secondary">
-              <span class="btn-icon">🎯</span>
-              <span class="btn-text">开始强化练习</span>
-            </router-link>
-            <router-link to="/exam" class="btn btn-outline">
-              <span class="btn-icon">📊</span>
-              <span class="btn-text">真题模拟测试</span>
-            </router-link>
+            <router-link to="/notes" class="btn btn-primary">查看中文笔记</router-link>
+            <router-link to="/practice" class="btn btn-secondary">开始强化练习</router-link>
           </div>
         </div>
       </section>
-
-      <!-- 页脚 -->
-      <footer class="footer">
-        <div class="footer-content">
-          <p>© 2025 宅学苑 - 日本宅建士考试中文学习平台 | 专注·专业·高效</p>
-          <div class="footer-links">
-            <a href="#">关于我们</a>
-            <a href="#">帮助中心</a>
-            <a href="#">隐私政策</a>
-            <a href="#">用户协议</a>
-          </div>
-        </div>
-      </footer>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'Video',
-  data() {
-    return {
-      mobileMenuOpen: false,
-      searchQuery: '',
-      activeDomain: 'all',
-      currentVideo: {},
-      videoPlayer: null,
-      videoPlaying: false,
-      activeTab: 'description',
-      viewMode: 'list',
-      filterStatus: 'all',
-      domains: [
-        { 
-          id: 'all', 
-          name: '全部视频', 
-          icon: '🎬', 
-          videoCount: 0
-        },
-        { 
-          id: 'rights', 
-          name: '权利关系', 
-          icon: '⚖️', 
-          videoCount: 8
-        },
-        { 
-          id: 'business', 
-          name: '宅建业法', 
-          icon: '🏢', 
-          videoCount: 10
-        },
-        { 
-          id: 'regulations', 
-          name: '法令制限', 
-          icon: '📏', 
-          videoCount: 12
-        },
-        { 
-          id: 'tax', 
-          name: '税・価格', 
-          icon: '💰', 
-          videoCount: 6
-        },
-        { 
-          id: 'exempt', 
-          name: '五问免除', 
-          icon: '✅', 
-          videoCount: 4
-        }
-      ],
-      videoCategories: [
-        {
-          id: 'rights',
-          name: '权利关系',
-          expanded: true,
-          videos: [
-            {
-              id: 'rights-1',
-              title: '意思表示详解',
-              src: 'intent-expression.mp4',
-              duration: '15:30',
-              level: '基础',
-              domain: '权利关系',
-              updateDate: '2024-01-15',
-              description: '深度解析意思表示的法律概念、构成要件和实际应用，帮助理解法律行为的基础',
-              notesLink: '/notes/rights/intent',
-              progress: 65,
-              bookmarked: true,
-              views: 124,
-              objectives: [
-                '理解意思表示的基本概念',
-                '掌握意思表示的构成要件',
-                '熟悉意思表示的法律效果',
-                '了解实务中的常见问题'
-              ],
-              relatedPoints: [
-                { 
-                  id: 'p1', 
-                  name: '意思表示要件', 
-                  icon: '📝', 
-                  link: '/notes/rights/intent-requirements',
-                  description: '意思表示的有效要件和无效情形'
-                },
-                { 
-                  id: 'p2', 
-                  name: '法律行为', 
-                  icon: '⚖️', 
-                  link: '/notes/rights/legal-acts',
-                  description: '法律行为的分类和效力'
-                }
-              ]
-            },
-            {
-              id: 'rights-2',
-              title: '代理制度全解析',
-              src: 'agency-system.mp4',
-              duration: '18:45',
-              level: '中级',
-              domain: '权利关系',
-              updateDate: '2024-01-10',
-              description: '全面讲解代理权的授予、表见代理、无权代理等代理相关法律制度',
-              notesLink: '/notes/rights/agency',
-              progress: 42,
-              bookmarked: false,
-              views: 98,
-              objectives: [
-                '掌握代理权的授予方式',
-                '理解表见代理的构成要件',
-                '熟悉无权代理的法律后果',
-                '了解代理制度的实务应用'
-              ],
-              relatedPoints: [
-                { 
-                  id: 'p3', 
-                  name: '代理权授予', 
-                  icon: '📋', 
-                  link: '/notes/rights/agency-authorization',
-                  description: '代理权的授予方式和范围限制'
-                },
-                { 
-                  id: 'p4', 
-                  name: '表见代理', 
-                  icon: '👥', 
-                  link: '/notes/rights/apparent-agency',
-                  description: '表见代理的认定标准和法律效果'
-                }
-              ]
-            }
-          ]
-        },
-        {
-          id: 'business',
-          name: '宅建业法',
-          expanded: true,
-          videos: [
-            {
-              id: 'business-1',
+<script setup>
+import { useUserStore } from '@/stores/user'
+import { useLearningStore } from '@/stores/learning'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
+
+const userStore = useUserStore()
+const learningStore = useLearningStore()
+const router = useRouter()
+
+const mobileMenuOpen = ref(false)
+const activeDomain = ref('all')
+const currentVideo = ref({})
+const videoPlayer = ref(null)
+const videoPlaying = ref(false)
+const activeTab = ref('description')
+const searchQuery = ref('')
+const filterStatus = ref('all')
+const videoDuration = ref(0)
+
+// 五大分野数据
+const domains = [
+  { 
+    id: 'all', 
+    name: '全部视频', 
+    icon: '🎬'
+  },
+  { 
+    id: 'rights', 
+    name: '权利关系', 
+    icon: '⚖️'
+  },
+  { 
+    id: 'business', 
+    name: '宅建业法', 
+    icon: '🏢'
+  },
+  { 
+    id: 'regulations', 
+    name: '法令制限', 
+    icon: '📏'
+  },
+  { 
+    id: 'tax', 
+    name: '税・価格', 
+    icon: '💰'
+  },
+  { 
+    id: 'exempt', 
+    name: '五问免除', 
+    icon: '✅'
+  }
+]
+
+// 视频数据 - 对齐项目圣经的video_watch_logs表结构
+const videos = ref([
+  {
+    id: 'rights-1',
+    title: '意思表示详解',
+    src: 'intent-expression.mp4',
+    duration: '15:30',
+    totalDuration: 930, // 秒数
+    level: '基础',
+    difficultyClass: 'basic',
+    domain: '权利关系',
+    updateDate: '2024-01-15',
+    description: '深度解析意思表示的法律概念、构成要件和实际应用，帮助理解法律行为的基础',
+    notesLink: '/notes/rights/intent',
+    // 对齐项目圣经的video_watch_logs字段
+    totalWatchDuration: 450, // 总观看秒数
+    lastPosition: 420, // 最后观看位置（秒）
+    completed: false,
+    bookmarked: true,
+    isNew: true,
+    objectives: [
+      '理解意思表示的基本概念',
+      '掌握意思表示的构成要件',
+      '熟悉意思表示的法律效果',
+      '了解实务中的常见问题'
+    ],
+    relatedPoints: [
+      { 
+        id: 'p1', 
+        name: '意思表示要件', 
+        icon: '📝', 
+        link: '/notes/rights/intent-requirements',
+        description: '意思表示的有效要件和无效情形'
+      },
+      { 
+        id: 'p2', 
+        name: '法律行为', 
+        icon: '⚖️', 
+        link: '/notes/rights/legal-acts',
+        description: '法律行为的分类和效力'
+      }
+    ]
+  },
+  {
+    id: 'rights-2',
+    title: '代理制度全解析',
+    src: 'agency-system.mp4',
+    duration: '18:45',
+    totalDuration: 1125, // 秒数
+    level: '中级',
+    difficultyClass: 'medium',
+    domain: '权利关系',
+    updateDate: '2024-01-10',
+    description: '全面讲解代理权的授予、表见代理、无权代理等代理相关法律制度',
+    notesLink: '/notes/rights/agency',
+    // 对齐项目圣经的video_watch_logs字段
+    totalWatchDuration: 680, // 总观看秒数
+    lastPosition: 680, // 最后观看位置（秒）
+    completed: false,
+    bookmarked: false,
+    isNew: false,
+    objectives: [
+      '掌握代理权的授予方式',
+      '理解表见代理的构成要件',
+      '熟悉无权代理的法律后果',
+      '了解代理制度的实务应用'
+    ],
+    relatedPoints: [
+      { 
+        id: 'p3', 
+        name: '代理权授予', 
+        icon: '📋', 
+        link: '/notes/rights/agency-authorization',
+        description: '代理权的授予方式和范围限制'
+      },
+      { 
+        id: 'p4', 
+        name: '表见代理', 
+        icon: '👥', 
+        link: '/notes/rights/apparent-agency',
+        description: '表见代理的认定标准和法律效果'
+      }
+    ]
+  },
+  {
+    id: 'business-1',
     title: '重要事项说明完全攻略',
     src: 'important-matters.mp4',
-    // 更新这一行，使用你的 Cloudflare R2 URL
-    cdnUrl: 'https://pub-7216172273a24ef79956d8088c35ad35.r2.dev/important-matters.mp4',
-    duration: '03:00',
+    duration: '22:15',
+    totalDuration: 1335, // 秒数
     level: '重要',
+    difficultyClass: 'important',
     domain: '宅建业法',
     updateDate: '2024-01-20',
-              description: '详细讲解重要事项说明的法律要求、实务操作要点和常见问题处理',
-              notesLink: '/notes/business/explanation',
-              progress: 85,
-              bookmarked: true,
-              views: 156,
-              objectives: [
-                '掌握重要事项说明的法定内容',
-                '了解说明义务的履行要求',
-                '熟悉书面文件的制作规范',
-                '掌握实务中的注意事项'
-              ],
-              relatedPoints: [
-                { 
-                  id: 'p5', 
-                  name: '说明义务', 
-                  icon: '📢', 
-                  link: '/notes/business/explanation-duty',
-                  description: '宅建士的说明义务范围和履行要求'
-                },
-                { 
-                  id: 'p6', 
-                  name: '书面文件', 
-                  icon: '📄', 
-                  link: '/notes/business/written-documents',
-                  description: '重要事项说明书的制作要求和内容规范'
-                }
-              ]
-            },
-            {
-              id: 'business-2',
-              title: '媒介契约实务指南',
-              src: 'media-contract.mp4',
-              duration: '16:20',
-              level: '中级',
-              domain: '宅建业法',
-              updateDate: '2024-01-18',
-              description: '解析媒介契约的种类、要件和实务操作中的注意事项',
-              notesLink: '/notes/business/contract',
-              progress: 30,
-              bookmarked: false,
-              views: 87,
-              objectives: [
-                '了解媒介契约的种类',
-                '掌握各类契约的要件',
-                '熟悉报告义务的履行',
-                '了解实务中的风险点'
-              ],
-              relatedPoints: [
-                { 
-                  id: 'p7', 
-                  name: '契约类型', 
-                  icon: '📝', 
-                  link: '/notes/business/contract-types',
-                  description: '专属专任媒介与一般媒介的区别'
-                },
-                { 
-                  id: 'p8', 
-                  name: '报告义务', 
-                  icon: '📊', 
-                  link: '/notes/business/report-duty',
-                  description: '媒介契约中的报告义务和履行要求'
-                }
-              ]
-            }
-          ]
-        }
-      ],
-      learningStats: {
-        days: 7,
-        totalHours: 12,
-        completedVideos: 0,
-        bookmarkedVideos: 0
+    description: '详细讲解重要事项说明的法律要求、实务操作要点和常见问题处理',
+    notesLink: '/notes/business/explanation',
+    // 对齐项目圣经的video_watch_logs字段
+    totalWatchDuration: 1335, // 总观看秒数
+    lastPosition: 1335, // 最后观看位置（秒）
+    completed: true,
+    bookmarked: true,
+    isNew: true,
+    objectives: [
+      '掌握重要事项说明的法定内容',
+      '了解说明义务的履行要求',
+      '熟悉书面文件的制作规范',
+      '掌握实务中的注意事项'
+    ],
+    relatedPoints: [
+      { 
+        id: 'p5', 
+        name: '说明义务', 
+        icon: '📢', 
+        link: '/notes/business/explanation-duty',
+        description: '宅建士的说明义务范围和履行要求'
+      },
+      { 
+        id: 'p6', 
+        name: '书面文件', 
+        icon: '📄', 
+        link: '/notes/business/written-documents',
+        description: '重要事项说明书的制作要求和内容规范'
       }
+    ]
+  },
+  {
+    id: 'business-2',
+    title: '媒介契约实务指南',
+    src: 'media-contract.mp4',
+    duration: '16:20',
+    totalDuration: 980, // 秒数
+    level: '中级',
+    difficultyClass: 'medium',
+    domain: '宅建业法',
+    updateDate: '2024-01-18',
+    description: '解析媒介契约的种类、要件和实务操作中的注意事项',
+    notesLink: '/notes/business/contract',
+    // 对齐项目圣经的video_watch_logs字段
+    totalWatchDuration: 0, // 总观看秒数
+    lastPosition: 0, // 最后观看位置（秒）
+    completed: false,
+    bookmarked: false,
+    isNew: false,
+    objectives: [
+      '了解媒介契约的种类',
+      '掌握各类契约的要件',
+      '熟悉报告义务的履行',
+      '了解实务中的风险点'
+    ],
+    relatedPoints: [
+      { 
+        id: 'p7', 
+        name: '契约类型', 
+        icon: '📝', 
+        link: '/notes/business/contract-types',
+        description: '专属专任媒介与一般媒介的区别'
+      },
+      { 
+        id: 'p8', 
+        name: '报告义务', 
+        icon: '📊', 
+        link: '/notes/business/report-duty',
+        description: '媒介契约中的报告义务和履行要求'
+      }
+    ]
+  },
+  {
+    id: 'regulations-1',
+    title: '都市计划法详解',
+    src: 'urban-planning-law.mp4',
+    duration: '25:10',
+    totalDuration: 1510, // 秒数
+    level: '重点',
+    difficultyClass: 'key',
+    domain: '法令制限',
+    updateDate: '2024-01-22',
+    description: '深入解析都市计划区域、用途地域、开发许可等都市计划相关制度',
+    notesLink: '/notes/regulations/urban',
+    // 对齐项目圣经的video_watch_logs字段
+    totalWatchDuration: 300, // 总观看秒数
+    lastPosition: 300, // 最后观看位置（秒）
+    completed: false,
+    bookmarked: false,
+    isNew: true,
+    objectives: [
+      '理解都市计划的基本概念',
+      '掌握用途地域的分类',
+      '熟悉开发许可的要件',
+      '了解实务操作流程'
+    ],
+    relatedPoints: [
+      { 
+        id: 'p9', 
+        name: '用途地域', 
+        icon: '🏙️', 
+        link: '/notes/regulations/land-use',
+        description: '各类用途地域的特点和限制'
+      },
+      { 
+        id: 'p10', 
+        name: '开发许可', 
+        icon: '📋', 
+        link: '/notes/regulations/development-permit',
+        description: '开发许可的申请条件和流程'
+      }
+    ]
+  }
+])
+
+const learningStats = ref({
+  days: 7,
+  totalHours: 12,
+  completedVideos: 0,
+  bookmarkedVideos: 0
+})
+
+const domainStats = ref([
+  { id: 'rights', name: '权利关系', score: 54 },
+  { id: 'business', name: '宅建业法', score: 58 },
+  { id: 'regulations', name: '法令制限', score: 20 },
+  { id: 'tax', name: '税・価格', score: 0 },
+  { id: 'exempt', name: '五问免除', score: 0 }
+])
+
+// 计算属性
+const totalVideos = computed(() => videos.value.length)
+
+const completedVideos = computed(() => {
+  return videos.value.filter(video => video.completed).length
+})
+
+const bookmarkedVideos = computed(() => {
+  return videos.value.filter(video => video.bookmarked).length
+})
+
+const totalDuration = computed(() => {
+  return Math.round(totalVideos.value * 0.4)
+})
+
+const overallProgress = computed(() => {
+  const totalProgress = videos.value.reduce((sum, video) => {
+    const progress = video.totalDuration > 0 ? (video.lastPosition / video.totalDuration) * 100 : 0
+    return sum + Math.min(progress, 100)
+  }, 0)
+  return Math.round(totalProgress / videos.value.length)
+})
+
+const totalWatchDuration = computed(() => {
+  return videos.value.reduce((sum, video) => sum + video.totalWatchDuration, 0)
+})
+
+const currentVideoProgress = computed(() => {
+  if (!currentVideo.value.id || currentVideo.value.totalDuration === 0) return 0
+  const progress = (currentVideo.value.lastPosition / currentVideo.value.totalDuration) * 100
+  return Math.min(Math.round(progress), 100)
+})
+
+const filteredVideos = computed(() => {
+  let filtered = videos.value
+
+  // 按领域筛选
+  if (activeDomain.value !== 'all') {
+    filtered = filtered.filter(video => video.domain === getDomainName(activeDomain.value))
+  }
+
+  // 按搜索词筛选
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(video => 
+      video.title.toLowerCase().includes(query) ||
+      video.description.toLowerCase().includes(query)
+    )
+  }
+
+  // 按状态筛选
+  if (filterStatus.value !== 'all') {
+    if (filterStatus.value === 'completed') {
+      filtered = filtered.filter(video => video.completed)
+    } else if (filterStatus.value === 'in-progress') {
+      filtered = filtered.filter(video => video.totalWatchDuration > 0 && !video.completed)
+    } else if (filterStatus.value === 'bookmarked') {
+      filtered = filtered.filter(video => video.bookmarked)
     }
-  },
-  computed: {
-    totalVideos() {
-      return this.videoCategories.reduce((total, category) => total + category.videos.length, 0)
-    },
-    completedVideos() {
-      return this.videoCategories.flatMap(category => category.videos)
-        .filter(video => video.progress === 100).length
-    },
-    bookmarkedVideos() {
-      return this.videoCategories.flatMap(category => category.videos)
-        .filter(video => video.bookmarked).length
-    },
-    totalDuration() {
-      // 简化的时长计算，实际应该从视频数据中计算
-      return Math.round(this.totalVideos * 0.3)
-    },
-    overallProgress() {
-      const totalProgress = this.videoCategories.flatMap(category => category.videos)
-        .reduce((sum, video) => sum + video.progress, 0)
-      return Math.round(totalProgress / this.totalVideos)
-    },
-    filteredVideos() {
-      if (!this.searchQuery) {
-        return this.videoCategories.flatMap(category => category.videos)
+  }
+
+  return filtered
+})
+
+// 方法
+const getDomainVideoCount = (domainId) => {
+  if (domainId === 'all') return totalVideos.value
+  const domainName = getDomainName(domainId)
+  return videos.value.filter(video => video.domain === domainName).length
+}
+
+const getDomainProgress = (domainId) => {
+  if (domainId === 'all') return overallProgress.value
+  const domainName = getDomainName(domainId)
+  const domainVideos = videos.value.filter(video => video.domain === domainName)
+  if (domainVideos.length === 0) return 0
+  
+  const totalProgress = domainVideos.reduce((sum, video) => {
+    const progress = video.totalDuration > 0 ? (video.lastPosition / video.totalDuration) * 100 : 0
+    return sum + Math.min(progress, 100)
+  }, 0)
+  return Math.round(totalProgress / domainVideos.length)
+}
+
+const getDomainName = (domainId) => {
+  const domain = domains.find(d => d.id === domainId)
+  return domain ? domain.name : ''
+}
+
+const getActiveDomainName = () => {
+  const domain = domains.find(d => d.id === activeDomain.value)
+  return domain ? domain.name : '全部'
+}
+
+const switchDomain = (domainId) => {
+  activeDomain.value = domainId
+}
+
+const selectVideo = async (video) => {
+  // 保存当前视频进度
+  if (currentVideo.value.id) {
+    await saveVideoProgress(currentVideo.value)
+  }
+  
+  currentVideo.value = { ...video }
+  videoPlaying.value = false
+  
+  // 加载视频后设置播放位置
+  if (videoPlayer.value && video.lastPosition > 0) {
+    setTimeout(() => {
+      if (videoPlayer.value) {
+        videoPlayer.value.currentTime = video.lastPosition
       }
-      
-      const query = this.searchQuery.toLowerCase()
-      return this.videoCategories.flatMap(category => 
-        category.videos.filter(video => 
-          video.title.toLowerCase().includes(query) ||
-          video.description.toLowerCase().includes(query) ||
-          video.domain.toLowerCase().includes(query)
-        )
-      )
-    },
-    filteredCategories() {
-      return this.videoCategories.map(category => ({
-        ...category,
-        videos: category.videos.filter(video => {
-          if (this.filterStatus === 'all') return true
-          if (this.filterStatus === 'completed') return video.progress === 100
-          if (this.filterStatus === 'in-progress') return video.progress > 0 && video.progress < 100
-          if (this.filterStatus === 'bookmarked') return video.bookmarked
-          return true
-        })
-      })).filter(category => category.videos.length > 0)
-    },
-    recommendedVideos() {
-      // 推荐逻辑：进度中等、重要的视频
-      return this.videoCategories.flatMap(category => category.videos)
-        .filter(video => video.progress > 0 && video.progress < 80)
-        .sort((a, b) => b.progress - a.progress)
-        .slice(0, 4)
-    },
-    recommendedPath() {
-      // 简化的推荐路径逻辑
-      const videos = this.videoCategories.flatMap(category => category.videos)
-      return [
-        {
-          id: 'path-1',
-          title: '重要事项说明完全攻略',
-          description: '宅建业法的核心内容，考试重点',
-          duration: '22:15',
-          level: '重要',
-          completed: false,
-          current: true,
-          available: true
-        },
-        {
-          id: 'path-2',
-          title: '意思表示详解',
-          description: '权利关系的基础知识',
-          duration: '15:30',
-          level: '基础',
-          completed: false,
-          current: false,
-          available: true
-        },
-        {
-          id: 'path-3',
-          title: '代理制度全解析',
-          description: '深入理解代理法律关系',
-          duration: '18:45',
-          level: '中级',
-          completed: false,
-          current: false,
-          available: true
-        }
-      ]
-    }
-  },
-  methods: {
-    toggleMobileMenu() {
-      this.mobileMenuOpen = !this.mobileMenuOpen
-    },
-    handleResize() {
-      if (window.innerWidth > 768) {
-        this.mobileMenuOpen = false
-      }
-    },
-    switchDomain(domainId) {
-      this.activeDomain = domainId
-      // 这里可以添加按领域筛选视频的逻辑
-    },
-    getDomainVideoCount(domainId) {
-      if (domainId === 'all') return this.totalVideos
-      const category = this.videoCategories.find(cat => cat.id === domainId)
-      return category ? category.videos.length : 0
-    },
-    getDomainProgress(domainId) {
-      if (domainId === 'all') return this.overallProgress
-      const category = this.videoCategories.find(cat => cat.id === domainId)
-      if (!category) return 0
-      
-      const totalProgress = category.videos.reduce((sum, video) => sum + video.progress, 0)
-      return Math.round(totalProgress / category.videos.length)
-    },
-    toggleCategory(categoryId) {
-      const category = this.videoCategories.find(cat => cat.id === categoryId)
-      if (category) {
-        category.expanded = !category.expanded
-      }
-    },
-    selectVideo(video) {
-      this.currentVideo = { ...video }
-      this.videoPlaying = false
-      // 加载视频进度等信息
-      this.loadVideoProgress(video)
-    },
-    playVideo() {
-      if (this.$refs.videoPlayer) {
-        this.$refs.videoPlayer.play()
-        this.videoPlaying = true
-      }
-    },
-    getVideoUrl(filename) {
-      // 实际项目中这里应该是真实的视频URL
-      return `/videos/${filename}`
-    },
-    getVideoIcon(video) {
-      if (video.progress === 100) return '✅'
-      if (video.progress > 0) return '▶️'
-      return '🎬'
-    },
-    getCategoryCompletedCount(category) {
-      return category.videos.filter(video => video.progress === 100).length
-    },
-    loadVideoProgress(video) {
-      // 从本地存储加载视频进度
-      const savedProgress = localStorage.getItem(`videoProgress_${video.id}`)
-      if (savedProgress) {
-        video.progress = parseInt(savedProgress)
-      }
-    },
-    saveVideoProgress(videoId, progress) {
-      // 保存视频进度到本地存储
-      localStorage.setItem(`videoProgress_${videoId}`, progress.toString())
-    },
-    toggleBookmark(video) {
-      video.bookmarked = !video.bookmarked
-      // 保存收藏状态到本地存储
-      const bookmarks = JSON.parse(localStorage.getItem('videoBookmarks') || '[]')
-      if (video.bookmarked) {
-        if (!bookmarks.includes(video.id)) {
-          bookmarks.push(video.id)
-        }
-      } else {
-        const index = bookmarks.indexOf(video.id)
-        if (index > -1) {
-          bookmarks.splice(index, 1)
-        }
-      }
-      localStorage.setItem('videoBookmarks', JSON.stringify(bookmarks))
-    },
-    onVideoPlay() {
-      this.videoPlaying = true
-      console.log('视频开始播放:', this.currentVideo.title)
-    },
-    onVideoPause() {
-      this.videoPlaying = false
-      console.log('视频暂停')
-    },
-    onVideoEnded() {
-      this.videoPlaying = false
-      if (this.currentVideo.id) {
-        this.currentVideo.progress = 100
-        this.saveVideoProgress(this.currentVideo.id, 100)
-        // 更新视频列表中的进度
-        this.updateVideoProgress(this.currentVideo.id, 100)
-      }
-    },
-    onTimeUpdate() {
-      if (this.$refs.videoPlayer && this.currentVideo.src) {
-        const video = this.$refs.videoPlayer
-        const progress = (video.currentTime / video.duration) * 100
-        if (!isNaN(progress) && progress > this.currentVideo.progress) {
-          this.currentVideo.progress = Math.round(progress)
-          this.saveVideoProgress(this.currentVideo.id, this.currentVideo.progress)
-          // 更新视频列表中的进度
-          this.updateVideoProgress(this.currentVideo.id, this.currentVideo.progress)
-        }
-      }
-    },
-    updateVideoProgress(videoId, progress) {
-      this.videoCategories.forEach(category => {
-        category.videos.forEach(video => {
-          if (video.id === videoId) {
-            video.progress = Math.max(video.progress, progress)
-          }
-        })
-      })
-    },
-    continueWatching() {
-      // 找到进度最高的未完成视频
-      const videos = this.videoCategories.flatMap(category => category.videos)
-      const ongoingVideo = videos
-        .filter(video => video.progress > 0 && video.progress < 100)
-        .sort((a, b) => b.progress - a.progress)[0]
-      
-      if (ongoingVideo) {
-        this.selectVideo(ongoingVideo)
-      } else {
-        // 如果没有进行中的视频，选择第一个未观看的视频
-        const firstVideo = videos.find(video => video.progress === 0)
-        if (firstVideo) {
-          this.selectVideo(firstVideo)
-        }
-      }
-    },
-    showBookmarkedVideos() {
-      const bookmarkedVideos = this.videoCategories.flatMap(category => 
-        category.videos.filter(video => video.bookmarked)
-      )
-      if (bookmarkedVideos.length > 0) {
-        this.selectVideo(bookmarkedVideos[0])
-      }
-    },
-    continueToNext() {
-      // 找到当前视频所在分类的下一个视频
-      const currentCategory = this.videoCategories.find(category => 
-        category.videos.some(video => video.id === this.currentVideo.id)
-      )
-      
-      if (currentCategory) {
-        const currentIndex = currentCategory.videos.findIndex(video => video.id === this.currentVideo.id)
-        const nextVideo = currentCategory.videos[currentIndex + 1]
-        
-        if (nextVideo) {
-          this.selectVideo(nextVideo)
-        } else {
-          // 如果当前是最后一个视频，选择下一个分类的第一个视频
-          const currentCategoryIndex = this.videoCategories.findIndex(cat => cat.id === currentCategory.id)
-          const nextCategory = this.videoCategories[currentCategoryIndex + 1]
-          
-          if (nextCategory && nextCategory.videos.length > 0) {
-            this.selectVideo(nextCategory.videos[0])
-          }
-        }
-      }
-    },
-    downloadMaterials() {
-      alert('下载功能开发中...')
-    }
-  },
-  mounted() {
-    window.addEventListener('resize', this.handleResize)
-    
-    // 初始化：选择第一个视频或继续观看
-    this.continueWatching()
-    
-    // 加载收藏状态
-    const bookmarks = JSON.parse(localStorage.getItem('videoBookmarks') || '[]')
-    this.videoCategories.forEach(category => {
-      category.videos.forEach(video => {
-        video.bookmarked = bookmarks.includes(video.id)
-        this.loadVideoProgress(video)
-      })
-    })
-    
-    // 更新学习统计
-    this.learningStats.completedVideos = this.completedVideos
-    this.learningStats.bookmarkedVideos = this.bookmarkedVideos
-  },
-  beforeUnmount() {
-    window.removeEventListener('resize', this.handleResize)
+    }, 100)
   }
 }
+
+const playVideo = () => {
+  if (videoPlayer.value) {
+    videoPlayer.value.play()
+    videoPlaying.value = true
+  }
+}
+
+const restartVideo = () => {
+  if (videoPlayer.value) {
+    currentVideo.value.lastPosition = 0
+    videoPlayer.value.currentTime = 0
+    playVideo()
+  }
+}
+
+const getVideoUrl = (filename) => {
+  return `/videos/${filename}`
+}
+
+const getVideoIcon = (video) => {
+  if (video.completed) return '✅'
+  if (video.totalWatchDuration > 0) return '▶️'
+  return '🎬'
+}
+
+const getVideoActionText = (video) => {
+  if (video.completed) return '重新学习'
+  if (video.totalWatchDuration > 0) return '继续学习'
+  return '开始学习'
+}
+
+const toggleBookmark = (video) => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以使用收藏功能')
+    openLoginDialog()
+    return
+  }
+  
+  video.bookmarked = !video.bookmarked
+  saveBookmarksToLocalStorage()
+}
+
+const onVideoPlay = () => {
+  videoPlaying.value = true
+  console.log('视频开始播放:', currentVideo.value.title)
+}
+
+const onVideoPause = () => {
+  videoPlaying.value = false
+  saveVideoProgress(currentVideo.value)
+  console.log('视频暂停，进度已保存')
+}
+
+const onVideoEnded = () => {
+  videoPlaying.value = false
+  if (currentVideo.value.id) {
+    currentVideo.value.completed = true
+    currentVideo.value.lastPosition = currentVideo.value.totalDuration
+    saveVideoProgress(currentVideo.value)
+    console.log('视频播放完成:', currentVideo.value.title)
+  }
+}
+
+const onVideoLoaded = () => {
+  if (videoPlayer.value) {
+    videoDuration.value = videoPlayer.value.duration
+    // 如果视频总时长与记录不符，更新记录
+    if (currentVideo.value.totalDuration !== videoDuration.value) {
+      currentVideo.value.totalDuration = Math.floor(videoDuration.value)
+    }
+  }
+}
+
+const onTimeUpdate = () => {
+  if (videoPlayer.value && currentVideo.value.id) {
+    const currentTime = Math.floor(videoPlayer.value.currentTime)
+    
+    // 更新最后观看位置
+    currentVideo.value.lastPosition = currentTime
+    
+    // 更新总观看时长（避免重复计算）
+    if (currentTime > currentVideo.value.lastPosition) {
+      const timeDiff = currentTime - currentVideo.value.lastPosition
+      currentVideo.value.totalWatchDuration += timeDiff
+    }
+    
+    // 检查是否完成
+    if (currentTime >= currentVideo.value.totalDuration * 0.95) {
+      currentVideo.value.completed = true
+    }
+    
+    // 节流保存，每5秒保存一次
+    if (Date.now() - (currentVideo.value.lastSaveTime || 0) > 5000) {
+      saveVideoProgress(currentVideo.value)
+      currentVideo.value.lastSaveTime = Date.now()
+    }
+  }
+}
+
+const formatTime = (seconds) => {
+  if (!seconds) return '0:00'
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+// 对齐项目圣经的video_watch_logs表结构保存
+const saveVideoProgress = async (video) => {
+  if (!userStore.user?.id) return
+  
+  const watchLog = {
+    userId: userStore.user.id,
+    videoId: video.id,
+    totalWatchDuration: video.totalWatchDuration,
+    lastPosition: video.lastPosition,
+    completed: video.completed,
+    updatedAt: new Date().toISOString()
+  }
+  
+  // 保存到本地存储 - 使用项目圣经的表名
+  const watchLogs = JSON.parse(localStorage.getItem('video_watch_logs') || '[]')
+  
+  // 查找现有记录
+  const existingIndex = watchLogs.findIndex(log => 
+    log.userId === watchLog.userId && log.videoId === watchLog.videoId
+  )
+  
+  if (existingIndex !== -1) {
+    watchLogs[existingIndex] = watchLog
+  } else {
+    watchLogs.push(watchLog)
+  }
+  
+  localStorage.setItem('video_watch_logs', JSON.stringify(watchLogs))
+  console.log('视频观看记录已保存:', watchLog)
+}
+
+// 加载视频观看记录
+const loadVideoWatchLogs = () => {
+  if (!userStore.user?.id) return
+  
+  const watchLogs = JSON.parse(localStorage.getItem('video_watch_logs') || '[]')
+  const userWatchLogs = watchLogs.filter(log => log.userId === userStore.user.id)
+  
+  userWatchLogs.forEach(log => {
+    const video = videos.value.find(v => v.id === log.videoId)
+    if (video) {
+      video.totalWatchDuration = log.totalWatchDuration
+      video.lastPosition = log.lastPosition
+      video.completed = log.completed
+    }
+  })
+}
+
+const saveBookmarksToLocalStorage = () => {
+  const bookmarks = videos.value
+    .filter(video => video.bookmarked)
+    .map(video => video.id)
+  
+  localStorage.setItem('videoBookmarks', JSON.stringify(bookmarks))
+}
+
+const loadBookmarksFromLocalStorage = () => {
+  const savedBookmarks = localStorage.getItem('videoBookmarks')
+  if (savedBookmarks) {
+    const bookmarks = JSON.parse(savedBookmarks)
+    videos.value.forEach(video => {
+      video.bookmarked = bookmarks.includes(video.id)
+    })
+  }
+}
+
+const continueToNext = () => {
+  const currentIndex = filteredVideos.value.findIndex(video => video.id === currentVideo.value.id)
+  const nextVideo = filteredVideos.value[currentIndex + 1]
+  
+  if (nextVideo) {
+    selectVideo(nextVideo)
+  } else {
+    // 如果没有下一个视频，选择第一个视频
+    if (filteredVideos.value.length > 0) {
+      selectVideo(filteredVideos.value[0])
+    }
+  }
+}
+
+const downloadMaterials = () => {
+  alert('下载功能开发中...')
+}
+
+// 打开登录弹窗 - 使用全局事件
+const openLoginDialog = () => {
+  window.dispatchEvent(new CustomEvent('open-login-dialog'))
+}
+
+const handleResize = () => {
+  if (window.innerWidth > 768) {
+    mobileMenuOpen.value = false
+  }
+}
+
+// 监听当前视频变化
+watch(currentVideo, (newVideo) => {
+  if (newVideo.id && videoPlayer.value) {
+    // 视频切换时设置播放位置
+    setTimeout(() => {
+      if (videoPlayer.value && newVideo.lastPosition > 0) {
+        videoPlayer.value.currentTime = newVideo.lastPosition
+      }
+    }, 500)
+  }
+})
+
+onMounted(() => {
+  window.addEventListener('resize', handleResize)
+  
+  // 加载用户数据
+  loadVideoWatchLogs()
+  loadBookmarksFromLocalStorage()
+  
+  // 更新学习统计
+  learningStats.value.completedVideos = completedVideos.value
+  learningStats.value.bookmarkedVideos = bookmarkedVideos.value
+  
+  // 选择第一个视频
+  if (videos.value.length > 0 && !currentVideo.value.id) {
+    selectVideo(videos.value[0])
+  }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  
+  // 保存当前视频进度
+  if (currentVideo.value.id) {
+    saveVideoProgress(currentVideo.value)
+  }
+})
 </script>
 
 <style scoped>
-/* CSS 变量定义 - 与其他模块保持一致 */
-:root {
-  --primary: #2a7960;
-  --primary-dark: #205e4a;
-  --primary-light: #e8f5f0;
-  --bg: #f6f9fc;
-  --card-bg: #ffffff;
-  --text: #0b2130;
-  --muted: #64748b;
-  --border: #e2e8f0;
-  --radius: 12px;
-  --gap: 20px;
-  --max-width: 1200px;
-  --container-padding: 20px;
-}
-
 .video {
   min-height: 100vh;
   background-color: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans GB", "PingFang SC", "Microsoft YaHei", "Noto Sans JP", "Noto Sans", Arial, sans-serif;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  padding-top: 20px;
 }
 
-/* ========= 布局容器 ========= */
+/* === 修复容器居中问题 === */
 .container {
-  max-width: var(--max-width);
+  max-width: var(--max-width, 1200px);
   margin: 0 auto;
-  padding: 0 var(--container-padding);
-  position: relative;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  padding: 0 var(--container-padding, 2rem);
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* ========= 顶部导航栏 ========= */
-.top-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 0;
-  position: sticky;
-  top: 0;
-  background: var(--bg);
-  z-index: 100;
-  border-bottom: 1px solid var(--border);
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  color: var(--primary-dark);
-  text-decoration: none;
-  font-size: 18px;
-}
-
-.logo .mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 800;
-  font-size: 16px;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.nav-links a {
-  color: var(--muted);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 15px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.nav-links a:hover, .nav-links a.active {
-  background: var(--primary-light);
-  color: var(--primary-dark);
-}
-
-.nav-links a.active {
-  font-weight: 700;
-}
-
-.login-btn {
-  background: var(--primary);
-  color: white !important;
-  padding: 8px 16px !important;
-}
-
-.login-btn:hover {
-  background: var(--primary-dark) !important;
-}
-
-.mobile-menu-toggle {
-  display: none;
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: var(--muted);
-  padding: 8px;
-  border-radius: 8px;
+/* 确保所有主要部分都有适当的间距 */
+.page-header,
+.quick-nav,
+.main-content,
+.cta-section {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 100%;
 }
 
 /* ========= 页面头部 ========= */
 .page-header {
-  background: linear-gradient(135deg, rgba(42, 121, 96, 0.08), rgba(42, 121, 96, 0.02));
-  border-radius: 20px;
-  padding: 50px 40px;
-  margin: 30px 0;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.header-content {
-  flex: 1;
-  max-width: 600px;
-}
-
-.header-badge {
-  display: inline-block;
-  background: var(--primary);
-  color: white;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 16px;
+  background: linear-gradient(135deg, rgba(42, 121, 96, 0.05), rgba(42, 121, 96, 0.02));
+  border-radius: var(--radius);
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  width: 100%;
 }
 
 .header-content h1 {
-  font-size: 36px;
+  font-size: 2.5rem;
   font-weight: 800;
   color: var(--primary-dark);
-  margin-bottom: 16px;
-  line-height: 1.2;
+  margin-bottom: 1rem;
 }
 
 .header-content p {
-  font-size: 18px;
+  font-size: 1.125rem;
   color: var(--muted);
-  margin-bottom: 30px;
+  max-width: 700px;
+  margin: 0 auto 2rem;
   line-height: 1.6;
 }
 
+.premium-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.badge-icon {
+  font-size: 16px;
+}
+
 .header-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  flex-wrap: wrap;
 }
 
 .stat-item {
   text-align: center;
-  padding: 16px;
-  background: white;
-  border-radius: var(--radius);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .stat-number {
   display: block;
-  font-size: 24px;
+  font-size: 2rem;
   font-weight: 700;
   color: var(--primary);
-  margin-bottom: 4px;
+  margin-bottom: 0.25rem;
 }
 
 .stat-label {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--muted);
-  font-weight: 500;
 }
 
-.header-decoration {
-  display: flex;
-  gap: 16px;
-}
-
-.decoration-item {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  animation: float 3s ease-in-out infinite;
-}
-
-.decoration-item:nth-child(2) {
-  animation-delay: 1s;
-}
-
-.decoration-item:nth-child(3) {
-  animation-delay: 2s;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-}
-
-/* ========= 学习进度概览 ========= */
-.progress-overview {
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  padding: 30px;
-  margin: 30px 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-}
-
-.overview-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.overview-header h2 {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--primary-dark);
-}
-
-.overall-progress {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.progress-text {
-  font-size: 14px;
-  color: var(--muted);
-  font-weight: 500;
-}
-
-.progress-bar-large {
-  width: 200px;
-  height: 8px;
-  background: var(--border);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-fill-large {
-  height: 100%;
-  background: var(--primary);
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.domain-progress-grid {
+/* ========= 快速导航 ========= */
+.quick-nav {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+  margin: 3rem 0;
+  width: 100%;
 }
 
-.domain-progress-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  background: var(--bg);
+.nav-section h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--primary-dark);
+  margin-bottom: 1rem;
+}
+
+.domain-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.domain-btn {
+  background: var(--card-bg);
+  border: 2px solid var(--border);
   border-radius: var(--radius);
+  padding: 1rem;
+  text-align: left;
   cursor: pointer;
   transition: all 0.3s ease;
-  border: 2px solid transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border: none;
+  font-family: inherit;
 }
 
-.domain-progress-card:hover {
+.domain-btn:hover {
   border-color: var(--primary);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(42, 121, 96, 0.1);
+  box-shadow: var(--shadow);
 }
 
-.domain-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.domain-btn.active {
+  background: var(--primary-light);
+  border-color: var(--primary);
 }
 
 .domain-icon {
   font-size: 24px;
 }
 
-.domain-details h3 {
-  font-size: 16px;
+.domain-name {
   font-weight: 600;
   color: var(--primary-dark);
-  margin-bottom: 4px;
 }
 
-.video-count {
+.domain-count {
   font-size: 12px;
   color: var(--muted);
 }
 
-.domain-progress {
+.tool-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.tool-btn {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  text-align: center;
+  text-decoration: none;
+  color: var(--text);
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
+  gap: 0.5rem;
+  align-items: center;
 }
 
-.progress-percent {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--primary);
+.tool-btn:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
 }
 
-.progress-bar-mini {
-  width: 100px;
-  height: 4px;
-  background: var(--border);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.progress-fill-mini {
-  height: 100%;
-  background: var(--primary);
-  border-radius: 2px;
-  transition: width 0.3s ease;
+.tool-icon {
+  font-size: 20px;
 }
 
 /* ========= 主要内容区域 ========= */
 .main-content {
-  margin: 40px 0;
-  flex: 1;
+  margin: 3rem 0;
+  width: 100%;
 }
 
-/* ========= 视频播放区域布局 ========= */
-.video-player-section {
-  display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 30px;
-  margin-bottom: 60px;
+/* ========= 区域头部 ========= */
+.section-header {
+  margin-bottom: 2rem;
+  width: 100%;
 }
 
-/* ========= 视频容器 ========= */
-.video-container {
+.section-header h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-bottom: 0.5rem;
+}
+
+.section-header h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--primary-dark);
+  margin-bottom: 0.5rem;
+}
+
+.section-header p {
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+
+.section-progress {
   background: var(--card-bg);
   border-radius: var(--radius);
-  box-shadow: 0 4px 12px rgba(12, 35, 50, 0.06);
+  padding: 1rem;
+  max-width: 300px;
+  box-shadow: var(--shadow-sm);
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
   overflow: hidden;
 }
 
+.progress-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+/* ========= 视频播放区域 ========= */
+.video-section {
+  margin-bottom: 3rem;
+  width: 100%;
+}
+
+.video-player-container {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
 .video-player {
-  min-height: 600px;
+  min-height: 400px;
+  width: 100%;
 }
 
 .video-placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 80px 40px;
+  padding: 4rem 2rem;
   text-align: center;
   color: var(--muted);
+  width: 100%;
 }
 
 .placeholder-content {
   max-width: 400px;
+  width: 100%;
 }
 
 .placeholder-icon {
-  font-size: 80px;
-  margin-bottom: 24px;
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
   opacity: 0.3;
 }
 
 .video-placeholder h3 {
-  font-size: 24px;
+  font-size: 1.5rem;
   color: var(--primary-dark);
-  margin-bottom: 12px;
+  margin-bottom: 0.75rem;
 }
 
 .video-placeholder p {
-  font-size: 16px;
-  margin-bottom: 30px;
+  font-size: 1rem;
+  margin-bottom: 2rem;
   line-height: 1.6;
 }
 
 .placeholder-features {
   display: flex;
   justify-content: center;
-  gap: 24px;
+  gap: 2rem;
 }
 
 .feature-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: 0.5rem;
+  font-size: 0.875rem;
   color: var(--muted);
 }
 
 .feature-icon {
-  font-size: 20px;
+  font-size: 1.25rem;
 }
 
 /* ========= 视频播放器头部 ========= */
@@ -1576,9 +1494,10 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 24px;
+  padding: 1.5rem;
   border-bottom: 1px solid var(--border);
-  gap: 20px;
+  gap: 1.25rem;
+  width: 100%;
 }
 
 .video-title-section {
@@ -1586,34 +1505,39 @@ export default {
 }
 
 .video-title {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--primary-dark);
-  margin-bottom: 12px;
+  margin-bottom: 0.75rem;
   line-height: 1.4;
 }
 
 .video-tags {
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
 .video-tag {
-  padding: 4px 8px;
+  padding: 0.25rem 0.5rem;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
 }
 
-.video-tag.基础 { background: #d1fae5; color: #065f46; }
-.video-tag.中级 { background: #fef3c7; color: #92400e; }
-.video-tag.重要 { background: #fee2e2; color: #991b1b; }
-.video-tag.高级 { background: #e0e7ff; color: #3730a3; }
-.video-tag.专项 { background: #f0f9ff; color: #0c4a6e; }
+.video-tag.basic { background: var(--primary-light); color: var(--primary); }
+.video-tag.medium { background: #fef3c7; color: #92400e; }
+.video-tag.important { background: #fee2e2; color: #991b1b; }
+.video-tag.key { background: #e0e7ff; color: #3730a3; }
 
 .video-tag.domain {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  text-transform: none;
+}
+
+.video-tag.duration {
   background: var(--primary-light);
   color: var(--primary-dark);
   text-transform: none;
@@ -1626,15 +1550,15 @@ export default {
 .action-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: white;
   color: var(--muted);
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .action-btn:hover, .action-btn.active {
@@ -1643,57 +1567,18 @@ export default {
   color: var(--primary-dark);
 }
 
-/* ========= 视频元信息 ========= */
-.video-meta-info {
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--border);
-}
-
-.meta-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.meta-icon {
-  font-size: 20px;
-  width: 24px;
-  text-align: center;
-}
-
-.meta-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.meta-label {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.meta-value {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
-}
-
 /* ========= 视频播放器 ========= */
 .video-wrapper {
-  padding: 0 24px 24px;
+  padding: 0 1.5rem 1.5rem;
+  width: 100%;
 }
 
-.video-player-container {
+.video-player-main {
   position: relative;
   border-radius: 12px;
   overflow: hidden;
   background: #000;
+  width: 100%;
 }
 
 .video-element {
@@ -1738,90 +1623,100 @@ export default {
   margin-left: 4px;
 }
 
+.resume-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.resume-content {
+  text-align: center;
+  color: white;
+  padding: 2rem;
+}
+
+.resume-content p {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.resume-content .btn {
+  margin: 0 0.5rem;
+}
+
 /* ========= 学习进度控制 ========= */
 .learning-progress {
-  padding: 20px 24px;
+  padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--border);
+  width: 100%;
 }
 
 .progress-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 0.75rem;
 }
 
 .progress-header h4 {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text);
 }
 
 .progress-percent {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--primary);
 }
 
-.progress-bar {
-  width: 100%;
-  height: 8px;
-  background: var(--border);
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 12px;
+.progress-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
-.progress-fill {
-  height: 100%;
-  background: var(--primary);
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.progress-actions {
-  text-align: center;
-}
-
-.completion-badge {
-  display: inline-flex;
+.progress-stats .stat {
+  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: var(--primary-light);
-  color: var(--primary-dark);
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.badge-icon {
-  font-size: 16px;
+  gap: 0.25rem;
 }
 
 /* ========= 行动按钮 ========= */
 .action-section {
-  padding: 20px 24px;
+  padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--border);
+  width: 100%;
 }
 
 .action-buttons {
   display: flex;
-  gap: 12px;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
   border-radius: 8px;
   border: none;
   cursor: pointer;
   font-weight: 600;
-  font-size: 14px;
-  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
   text-decoration: none;
   min-height: 44px;
 }
@@ -1831,9 +1726,9 @@ export default {
   color: white;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background: var(--primary-dark);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(42, 121, 96, 0.3);
 }
 
@@ -1843,10 +1738,10 @@ export default {
   border: 1px solid var(--primary);
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover:not(:disabled) {
   background: var(--primary);
   color: white;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .btn-outline {
@@ -1855,11 +1750,11 @@ export default {
   border: 1px solid var(--border);
 }
 
-.btn-outline:hover {
+.btn-outline:hover:not(:disabled) {
   background: var(--primary-light);
   border-color: var(--primary);
   color: var(--primary-dark);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .btn.disabled {
@@ -1869,30 +1764,27 @@ export default {
 }
 
 .btn-icon {
-  font-size: 16px;
-}
-
-.btn-text {
-  white-space: nowrap;
+  font-size: 1rem;
 }
 
 /* ========= 视频内容详情 ========= */
 .video-details {
-  padding: 24px;
+  padding: 1.5rem;
+  width: 100%;
 }
 
 .detail-tabs {
   display: flex;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 20px;
+  margin-bottom: 1.25rem;
 }
 
 .tab-btn {
-  padding: 12px 20px;
+  padding: 0.75rem 1.25rem;
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 500;
   color: var(--muted);
   border-bottom: 2px solid transparent;
@@ -1914,23 +1806,23 @@ export default {
 }
 
 .tab-panel h3 {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 600;
   color: var(--primary-dark);
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 .tab-panel h4 {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text);
-  margin-bottom: 12px;
+  margin-bottom: 0.75rem;
 }
 
 .description-content p {
   color: var(--muted);
   line-height: 1.6;
-  margin-bottom: 20px;
+  margin-bottom: 1.25rem;
 }
 
 .learning-objectives ul {
@@ -1939,8 +1831,8 @@ export default {
 }
 
 .learning-objectives li {
-  padding: 8px 0;
-  padding-left: 24px;
+  padding: 0.5rem 0;
+  padding-left: 1.5rem;
   position: relative;
   color: var(--muted);
 }
@@ -1957,13 +1849,13 @@ export default {
 .points-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 16px;
+  gap: 1rem;
 }
 
 .knowledge-card {
   background: var(--bg);
   border-radius: var(--radius);
-  padding: 20px;
+  padding: 1.25rem;
   border: 1px solid var(--border);
   transition: all 0.3s ease;
 }
@@ -1971,22 +1863,22 @@ export default {
 .knowledge-card:hover {
   border-color: var(--primary);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(42, 121, 96, 0.1);
+  box-shadow: var(--shadow);
 }
 
 .card-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
 .point-icon {
-  font-size: 20px;
+  font-size: 1.25rem;
 }
 
 .card-header h4 {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--primary-dark);
   margin: 0;
@@ -1994,15 +1886,15 @@ export default {
 
 .point-desc {
   color: var(--muted);
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.5;
-  margin-bottom: 12px;
+  margin-bottom: 0.75rem;
 }
 
 .point-link {
   color: var(--primary);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 500;
   transition: color 0.2s ease;
 }
@@ -2015,14 +1907,14 @@ export default {
 .resources-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  gap: 1rem;
 }
 
 .resource-card {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px;
+  gap: 0.75rem;
+  padding: 1rem;
   background: var(--bg);
   border-radius: var(--radius);
   text-decoration: none;
@@ -2034,79 +1926,56 @@ export default {
 .resource-card:hover {
   border-color: var(--primary);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(42, 121, 96, 0.1);
+  box-shadow: var(--shadow);
 }
 
 .resource-icon {
-  font-size: 24px;
+  font-size: 1.5rem;
   width: 40px;
   text-align: center;
 }
 
 .resource-content h4 {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--primary-dark);
-  margin-bottom: 4px;
+  margin-bottom: 0.25rem;
 }
 
 .resource-content p {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
   margin: 0;
 }
 
-/* ========= 视频侧边栏 ========= */
-.video-sidebar {
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  box-shadow: 0 4px 12px rgba(12, 35, 50, 0.06);
-  overflow: hidden;
-  position: sticky;
-  top: 100px;
-  max-height: calc(100vh - 140px);
-  display: flex;
-  flex-direction: column;
+/* ========= 视频列表 ========= */
+.video-list-section {
+  margin-top: 3rem;
+  width: 100%;
 }
 
-.sidebar-header {
-  padding: 20px;
-  border-bottom: 1px solid var(--border);
-}
-
-.sidebar-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--primary-dark);
-  margin-bottom: 16px;
+.list-controls {
   display: flex;
+  gap: 1rem;
   align-items: center;
-  gap: 8px;
-}
-
-.title-icon {
-  font-size: 20px;
-}
-
-.sidebar-controls {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+  flex-wrap: wrap;
+  width: 100%;
 }
 
 .search-box {
   position: relative;
   flex: 1;
+  min-width: 200px;
 }
 
 .search-input {
   width: 100%;
-  padding: 10px 12px 10px 36px;
+  padding: 0.625rem 0.75rem 0.625rem 2.25rem;
   border: 1px solid var(--border);
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 0.875rem;
   transition: all 0.2s ease;
-  background: var(--bg);
+  background: var(--card-bg);
 }
 
 .search-input:focus {
@@ -2117,641 +1986,396 @@ export default {
 
 .search-icon {
   position: absolute;
-  left: 12px;
+  left: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
   color: var(--muted);
   pointer-events: none;
 }
 
-.view-options {
-  display: flex;
-  gap: 4px;
-  background: var(--bg);
-  border-radius: 8px;
-  padding: 4px;
-}
-
-.view-option {
-  padding: 6px 8px;
-  border: none;
-  background: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-.view-option.active {
-  background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.sidebar-stats {
-  display: flex;
-  gap: 16px;
-}
-
-.sidebar-stats .stat-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.stat-value {
-  font-weight: 600;
-  color: var(--primary);
-}
-
-/* ========= 视频列表容器 ========= */
-.video-list-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.quick-filters {
-  display: flex;
-  gap: 8px;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg);
-}
-
-.filter-btn {
-  padding: 6px 12px;
+.filter-select {
+  padding: 0.625rem 0.75rem;
   border: 1px solid var(--border);
-  background: white;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.filter-btn:hover {
-  border-color: var(--primary);
-  color: var(--primary-dark);
-}
-
-.filter-btn.active {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: white;
-}
-
-/* ========= 视频列表 ========= */
-.video-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px 0;
-}
-
-.video-list.grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-  padding: 16px;
-}
-
-.video-category {
-  border-bottom: 1px solid var(--border);
-}
-
-.video-category:last-child {
-  border-bottom: none;
-}
-
-.category-header {
-  padding: 16px 20px;
-  background: var(--bg);
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: background-color 0.2s ease;
-}
-
-.category-header:hover {
-  background: var(--primary-light);
-}
-
-.category-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.category-icon {
-  font-size: 14px;
-  color: var(--muted);
-}
-
-.category-name {
-  font-weight: 600;
-  color: var(--primary-dark);
-  font-size: 14px;
-}
-
-.category-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.category-progress {
-  font-size: 12px;
-  color: var(--muted);
+  border-radius: 8px;
   background: var(--card-bg);
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-weight: 500;
-}
-
-.collapse-icon {
-  color: var(--muted);
-  font-weight: 600;
-  font-size: 16px;
-  width: 16px;
-  text-align: center;
-}
-
-.video-items {
-  padding: 8px 0;
-}
-
-/* ========= 视频项样式 ========= */
-.video-item {
-  display: flex;
-  align-items: flex-start;
-  padding: 12px 20px;
+  color: var(--text);
+  font-size: 0.875rem;
   cursor: pointer;
-  transition: all 0.2s ease;
-  border-left: 3px solid transparent;
-  gap: 12px;
+  min-width: 120px;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+/* ========= 视频网格 ========= */
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.video-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+  transition: all 0.3s ease;
+  border: 1px solid var(--border);
+  cursor: pointer;
   position: relative;
 }
 
-.video-item:hover {
-  background: var(--bg);
+.video-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary);
 }
 
-.video-item.active {
-  background: var(--primary-light);
-  border-left-color: var(--primary);
-}
-
-.video-item.completed {
+.video-card.active {
+  border-color: var(--primary);
   background: var(--primary-light);
 }
 
-.video-item.bookmarked .video-item-title {
-  color: var(--primary-dark);
-  font-weight: 600;
+.video-card.completed {
+  border-color: var(--primary);
 }
 
-.video-item.in-progress {
+.video-card.in-progress {
   background: rgba(42, 121, 96, 0.05);
 }
 
-.video-item.grid {
-  flex-direction: column;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  margin: 0 16px 16px;
-  padding: 16px;
-}
-
-.video-item.grid:hover {
-  border-color: var(--primary);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(42, 121, 96, 0.1);
-}
-
-.video-item-main {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  flex: 1;
-}
-
-.video-item.grid .video-item-main {
-  flex-direction: column;
-  gap: 12px;
-}
-
-.video-item-icon {
-  font-size: 16px;
-  margin-top: 2px;
-  flex-shrink: 0;
-}
-
-.video-item.grid .video-item-icon {
-  font-size: 24px;
-  align-self: center;
-}
-
-.video-item-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.video-item.grid .video-item-content {
-  width: 100%;
-}
-
-.video-item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.video-item.grid .video-item-header {
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-start;
-}
-
-.video-item-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text);
-  line-height: 1.4;
-  flex: 1;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.video-item.grid .video-item-title {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.video-item.active .video-item-title {
-  color: var(--primary-dark);
-  font-weight: 600;
-}
-
-.bookmark-indicator, .completed-indicator {
-  font-size: 12px;
-}
-
-.video-duration {
-  font-size: 12px;
-  color: var(--muted);
-  font-weight: 500;
-  flex-shrink: 0;
-}
-
-.video-item.grid .video-duration {
-  background: var(--primary-light);
-  color: var(--primary-dark);
-  padding: 2px 6px;
-  border-radius: 12px;
-  font-size: 11px;
-}
-
-.video-item-meta {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
-}
-
-.video-level {
-  font-size: 11px;
-  color: white;
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.video-level.基础 { background: #10b981; }
-.video-level.中级 { background: #f59e0b; }
-.video-level.重要 { background: #ef4444; }
-.video-level.高级 { background: #8b5cf6; }
-.video-level.专项 { background: #06b6d4; }
-
-.video-domain {
-  font-size: 11px;
-  color: var(--muted);
-  background: var(--bg);
-  padding: 2px 6px;
-  border-radius: 10px;
-}
-
-.video-item-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-
-.video-item.grid .video-item-footer {
-  width: 100%;
-}
-
-.video-progress {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-}
-
-.progress-bar-mini {
-  width: 60px;
-  height: 4px;
-  background: var(--border);
-  border-radius: 2px;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.video-item.grid .progress-bar-mini {
-  width: 100%;
-  height: 6px;
-}
-
-.progress-fill-mini {
-  height: 100%;
-  background: var(--primary);
-  border-radius: 2px;
-  transition: width 0.3s ease;
-}
-
-.progress-text {
-  font-size: 11px;
-  color: var(--muted);
-  font-weight: 500;
-  min-width: 25px;
-}
-
-.video-item-actions {
-  display: flex;
-  align-items: center;
-}
-
-.item-action-btn {
-  padding: 6px;
-  border: none;
-  background: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  color: var(--muted);
-  transition: all 0.2s ease;
-}
-
-.item-action-btn:hover {
-  background: var(--primary-light);
-  color: var(--primary-dark);
-}
-
-.video-item.grid .video-item-actions {
+.video-card.new::before {
+  content: "新";
   position: absolute;
   top: 12px;
   right: 12px;
-}
-
-/* ========= 推荐学习路径 ========= */
-.learning-path {
-  margin-bottom: 60px;
-}
-
-.section-header {
-  text-align: center;
-  margin-bottom: 32px;
-}
-
-.section-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--primary-dark);
-  margin-bottom: 12px;
-}
-
-.section-desc {
-  font-size: 16px;
-  color: var(--muted);
-  max-width: 600px;
-  margin: 0 auto;
-  line-height: 1.6;
-}
-
-.path-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.path-step {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 24px;
-  background: var(--card-bg);
-  border-radius: var(--radius);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 2px solid transparent;
-  transition: all 0.3s ease;
-}
-
-.path-step:hover {
-  border-color: var(--primary);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(42, 121, 96, 0.1);
-}
-
-.path-step.completed {
-  background: var(--primary-light);
-}
-
-.path-step.current {
-  border-color: var(--primary);
-  background: var(--primary-light);
-}
-
-.step-number {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--primary);
+  background: #ff6b6b;
   color: white;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  z-index: 1;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.video-badges {
+  display: flex;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.badge.new {
+  background: #ff6b6b;
+  color: white;
+}
+
+.badge.level.basic {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.badge.level.medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge.level.important {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge.level.key {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.badge.bookmarked {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 0.25rem;
+}
+
+.bookmark-btn {
+  background: none;
+  border: none;
+  font-size: 1.125rem;
+  cursor: pointer;
+  color: var(--muted);
+  transition: color 0.3s ease;
+  padding: 0.25rem;
+  border-radius: 4px;
+}
+
+.bookmark-btn:hover, .bookmark-btn.bookmarked {
+  color: #f59e0b;
+}
+
+/* ========= 视频卡片内容 ========= */
+.card-content {
+  margin-bottom: 1.25rem;
+}
+
+.video-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  background: var(--primary-light);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-.path-step.completed .step-number {
-  background: #10b981;
-}
-
-.path-step.current .step-number {
-  background: var(--primary-dark);
-}
-
-.step-content {
-  flex: 1;
-}
-
-.step-title {
-  font-size: 18px;
+  margin-bottom: 1rem;
+  color: var(--primary);
+  font-size: 1.125rem;
   font-weight: 600;
+}
+
+.video-title {
+  font-size: 1.125rem;
+  font-weight: 700;
   color: var(--primary-dark);
-  margin-bottom: 8px;
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
 }
 
-.step-desc {
+.video-desc {
   color: var(--muted);
-  margin-bottom: 12px;
+  font-size: 0.875rem;
   line-height: 1.5;
+  margin-bottom: 1rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.step-meta {
+.video-meta {
   display: flex;
-  gap: 16px;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 
-.step-duration {
-  font-size: 14px;
-  color: var(--muted);
+.meta-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
 }
 
-.step-level {
-  font-size: 12px;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
+.meta-icon {
+  font-size: 0.875rem;
 }
 
-.step-level.基础 { background: #10b981; }
-.step-level.中级 { background: #f59e0b; }
-.step-level.重要 { background: #ef4444; }
-.step-level.高级 { background: #8b5cf6; }
-.step-level.专项 { background: #06b6d4; }
-
-.step-action {
-  padding: 10px 20px;
-  border: 1px solid var(--primary);
-  background: var(--primary);
-  color: white;
+/* ========= 视频进度 ========= */
+.video-progress {
+  background: var(--bg);
   border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
 }
 
-.step-action:hover:not(:disabled) {
-  background: var(--primary-dark);
-  transform: translateY(-1px);
+.progress-text {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
 }
 
-.step-action:disabled {
-  background: var(--muted);
-  border-color: var(--muted);
-  cursor: not-allowed;
-  opacity: 0.6;
+.watch-stats {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--muted);
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
-/* ========= 学习统计 ========= */
-.learning-stats {
-  margin-bottom: 60px;
+.watch-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* ========= 卡片操作 ========= */
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ========= 无视频状态 ========= */
+.no-videos {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--muted);
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.no-videos-icon {
+  font-size: 4rem;
+  margin-bottom: 1.25rem;
+  opacity: 0.5;
+}
+
+.no-videos h3 {
+  font-size: 1.25rem;
+  color: var(--primary-dark);
+  margin-bottom: 0.5rem;
+}
+
+.no-videos p {
+  font-size: 1rem;
+}
+
+/* ========= 统计区域 ========= */
+.stats-section {
+  width: 100%;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+  width: 100%;
 }
 
-.stat-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 24px;
+.stats-card {
   background: var(--card-bg);
   border-radius: var(--radius);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  transition: all 0.3s ease;
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
 }
 
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(42, 121, 96, 0.1);
-}
-
-.stat-icon {
-  font-size: 32px;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: var(--primary-light);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.stat-content h3 {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--muted);
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.stat-value {
-  display: block;
-  font-size: 24px;
+.stats-card h3 {
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--primary-dark);
-  margin-bottom: 4px;
+  margin-bottom: 1.5rem;
+  text-align: center;
 }
 
-.stat-label {
-  font-size: 12px;
+.stats-content {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.stats-content .stat-item {
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.stats-content .stat-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.25rem;
+}
+
+.stats-content .stat-label {
+  font-size: 0.875rem;
   color: var(--muted);
+}
+
+/* ========= 领域进度 ========= */
+.domain-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.domain-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.domain-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.domain-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.domain-score {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+/* ========= 登录提示 ========= */
+.login-prompt {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 3rem 2rem;
+  text-align: center;
+  margin: 3rem 0;
+  border: 1px solid var(--border);
+  width: 100%;
+}
+
+.prompt-content h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-bottom: 0.75rem;
+}
+
+.prompt-content p {
+  color: var(--muted);
+  margin-bottom: 1.25rem;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* ========= 底部行动号召 ========= */
 .cta-section {
   text-align: center;
-  padding: 60px 40px;
-  margin: 60px 0 40px;
-  background: linear-gradient(135deg, rgba(42, 121, 96, 0.05), rgba(42, 121, 96, 0.02));
-  border-radius: 20px;
+  padding: 3rem 0;
+  margin: 4rem 0 3rem;
+  width: 100%;
 }
 
 .cta-section h2 {
-  font-size: 32px;
+  font-size: 1.75rem;
   font-weight: 700;
   color: var(--primary-dark);
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 .cta-section p {
-  font-size: 18px;
+  font-size: 1rem;
   color: var(--muted);
-  margin-bottom: 32px;
+  margin-bottom: 1.5rem;
   max-width: 500px;
   margin-left: auto;
   margin-right: auto;
@@ -2760,150 +2384,117 @@ export default {
 
 .cta-buttons {
   display: flex;
-  gap: 16px;
+  gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
 }
 
-/* ========= 页脚 ========= */
-.footer {
-  text-align: center;
-  padding: 40px 0;
-  margin-top: 60px;
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 14px;
-  width: 100%;
-}
-
-.footer-content {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 20px;
-}
-
-.footer-links {
-  display: flex;
-  gap: 24px;
-}
-
-.footer-links a {
-  color: var(--muted);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.footer-links a:hover {
-  color: var(--primary-dark);
-}
-
 /* ========= 响应式设计 ========= */
-@media (max-width: 1200px) {
-  .video-player-section {
-    grid-template-columns: 1fr 340px;
-  }
-  
-  .meta-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
 @media (max-width: 1024px) {
-  .video-player-section {
+  .quick-nav {
     grid-template-columns: 1fr;
-    gap: 20px;
   }
   
-  .video-sidebar {
-    position: static;
-    max-height: none;
-  }
-  
-  .header-stats {
+  .video-grid {
     grid-template-columns: repeat(2, 1fr);
   }
   
-  .domain-progress-grid {
+  .stats-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .container {
+    padding: 0 var(--container-padding, 1.5rem);
   }
 }
 
 @media (max-width: 768px) {
-  .nav-links {
-    display: none;
-    position: absolute;
-    top: 70px;
-    left: 0;
-    right: 0;
-    background: white;
-    flex-direction: column;
-    padding: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    border-radius: 12px;
-    margin: 0 20px;
-    z-index: 100;
-  }
-  
-  .nav-links.mobile-show {
-    display: flex;
-  }
-  
-  .mobile-menu-toggle {
-    display: block;
-  }
-  
   .page-header {
-    padding: 30px 20px;
-    flex-direction: column;
-    text-align: center;
-    gap: 30px;
+    padding: 2rem 1rem;
   }
   
   .header-content h1 {
-    font-size: 28px;
+    font-size: 2rem;
   }
   
   .header-content p {
-    font-size: 16px;
+    font-size: 1rem;
   }
   
-  .header-decoration {
-    justify-content: center;
+  .video-grid {
+    grid-template-columns: 1fr;
   }
   
-  .progress-overview {
-    padding: 20px;
+  .domain-buttons {
+    grid-template-columns: 1fr;
   }
   
-  .overview-header {
-    flex-direction: column;
-    gap: 16px;
-    align-items: flex-start;
-  }
-  
-  .overall-progress {
-    width: 100%;
+  .tool-buttons {
+    grid-template-columns: 1fr;
   }
   
   .video-header {
     flex-direction: column;
-    gap: 16px;
+    gap: 1rem;
   }
   
   .video-title {
-    font-size: 20px;
+    font-size: 1.25rem;
   }
   
   .action-buttons {
     flex-direction: column;
   }
   
+  .card-actions {
+    flex-direction: column;
+  }
+  
+  .stats-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .list-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-box {
+    min-width: auto;
+  }
+  
+  .cta-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
   .btn {
-    justify-content: center;
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .container {
+    padding: 0 var(--container-padding, 1rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .header-stats {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .stat-number {
+    font-size: 1.75rem;
+  }
+  
+  .video-element {
+    height: 250px;
+  }
+  
+  .placeholder-features {
+    flex-direction: column;
+    gap: 1rem;
   }
   
   .detail-tabs {
@@ -2924,81 +2515,8 @@ export default {
     grid-template-columns: 1fr;
   }
   
-  .sidebar-controls {
-    flex-direction: column;
-  }
-  
-  .view-options {
-    align-self: flex-start;
-  }
-  
-  .path-step {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-  
-  .step-meta {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
-  .step-action {
-    width: 100%;
-    text-align: center;
-  }
-  
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .cta-buttons {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .footer-content {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .footer-links {
-    justify-content: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .page-header {
-    padding: 20px 16px;
-  }
-  
-  .header-content h1 {
-    font-size: 24px;
-  }
-  
-  .header-content p {
-    font-size: 16px;
-  }
-  
-  .header-stats {
-    grid-template-columns: 1fr;
-  }
-  
-  .video-element {
-    height: 250px;
-  }
-  
-  .placeholder-features {
-    flex-direction: column;
-    gap: 16px;
-  }
-  
-  .quick-filters {
-    flex-wrap: wrap;
-  }
-  
-  .video-item.grid {
-    margin: 0 8px 16px;
+  .container {
+    padding: 0 1rem;
   }
 }
 </style>
