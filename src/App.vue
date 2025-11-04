@@ -1,5 +1,14 @@
 <template>
   <div id="app">
+    <!-- 环境变量调试信息 - 部署后可以删除 -->
+    <div v-if="showDebugInfo" class="debug-info">
+      <h3>环境变量调试信息</h3>
+      <p><strong>应用标题:</strong> {{ envInfo.title }}</p>
+      <p><strong>当前环境:</strong> {{ envInfo.phase }}</p>
+      <p><strong>构建模式:</strong> {{ envInfo.mode }}</p>
+      <button @click="showDebugInfo = false" class="close-debug-btn">关闭</button>
+    </div>
+
     <!-- 全局导航栏 -->
     <header class="app-header">
       <div class="container">
@@ -8,7 +17,7 @@
           <div class="brand">
             <router-link to="/" class="brand-link">
               <span class="brand-icon">🏠</span>
-              <span class="brand-name">宅学苑</span>
+              <span class="brand-name">{{ envInfo.title }}</span>
             </router-link>
           </div>
 
@@ -68,43 +77,42 @@
     </main>
 
     <!-- 页脚 -->
-   <!-- 修改后的 App.vue 页脚部分 -->
-<footer class="app-footer">
-  <div class="container">
-    <div class="footer-content">
-      <div class="footer-info">
-        <div class="footer-logo">
-          <span class="logo-icon">🏠</span>
-          <span class="logo-text">宅学苑</span>
+    <footer class="app-footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-info">
+            <div class="footer-logo">
+              <span class="logo-icon">🏠</span>
+              <span class="logo-text">{{ envInfo.title }}</span>
+            </div>
+            <p class="footer-desc">
+              专为在日华人设计的宅建士资格考试备考平台
+            </p>
+          </div>
+          <div class="footer-links">
+            <div class="link-group">
+              <h4>学习资源</h4>
+              <router-link to="/notes">中文笔记</router-link>
+              <router-link to="/video">视频学习</router-link>
+              <router-link to="/practice">强化练习</router-link>
+              <router-link to="/exam">真题模拟</router-link>
+            </div>
+            <div class="link-group">
+              <h4>平台信息</h4>
+              <router-link to="/about">关于我们</router-link>
+              <a href="#" @click.prevent="showHelpInfo">使用帮助</a>
+              <a href="#" @click.prevent="showContactInfo">联系我们</a>
+            </div>
+          </div>
         </div>
-        <p class="footer-desc">
-          专为在日华人设计的宅建士资格考试备考平台
-        </p>
+        <div class="footer-bottom">
+          <p>&copy; 2025 {{ envInfo.title }} - 日本宅建士考试中文学习平台</p>
+          <p class="env-badge" v-if="envInfo.phase !== 'production'">
+            [{{ envInfo.phase.toUpperCase() }} 环境]
+          </p>
+        </div>
       </div>
-      <div class="footer-links">
-        <div class="link-group">
-          <h4>学习资源</h4>
-          <router-link to="/notes">中文笔记</router-link>
-          <router-link to="/video">视频学习</router-link>
-          <router-link to="/practice">强化练习</router-link>
-          <router-link to="/exam">真题模拟</router-link>
-        </div>
-        <div class="link-group">
-          <h4>平台信息</h4>
-          <router-link to="/about">关于我们</router-link>
-          <!-- 暂时注释掉不存在的路由 -->
-          <!-- <router-link to="/help">使用帮助</router-link> -->
-          <!-- <router-link to="/contact">联系我们</router-link> -->
-          <a href="#" @click.prevent="showHelpInfo">使用帮助</a>
-          <a href="#" @click.prevent="showContactInfo">联系我们</a>
-        </div>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2025 宅学苑 - 日本宅建士考试中文学习平台</p>
-    </div>
-  </div>
-</footer>
+    </footer>
 
     <!-- 全局弹窗 -->
     <SimulatedLogin />
@@ -112,10 +120,35 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import SimulatedLogin from '@/components/SimulatedLogin.vue'
 
 const userStore = useUserStore()
+
+// 环境变量调试信息
+const showDebugInfo = ref(true)
+const envInfo = ref({
+  title: '',
+  phase: '',
+  mode: ''
+})
+
+onMounted(() => {
+  // 获取环境变量
+  envInfo.value = {
+    title: import.meta.env.VITE_APP_TITLE,
+    phase: import.meta.env.VITE_APP_PHASE,
+    mode: import.meta.env.MODE
+  }
+  
+  // 在控制台输出环境变量，方便调试
+  console.log('=== 环境变量验证 ===')
+  console.log('VITE_APP_TITLE:', import.meta.env.VITE_APP_TITLE)
+  console.log('VITE_APP_PHASE:', import.meta.env.VITE_APP_PHASE)
+  console.log('MODE:', import.meta.env.MODE)
+  console.log('===================')
+})
 
 const openLoginDialog = () => {
   window.dispatchEvent(new CustomEvent('open-login-dialog'))
@@ -126,7 +159,7 @@ const handleLogout = () => {
     userStore.logout()
   }
 }
-// 在 App.vue 的 script setup 部分添加
+
 const showHelpInfo = () => {
   alert('使用帮助信息正在完善中，敬请期待！\n\n如有问题请联系客服：contact@zhaixueyuan.com')
 }
@@ -137,6 +170,66 @@ const showContactInfo = () => {
 </script>
 
 <style scoped>
+/* 调试信息样式 */
+.debug-info {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #ff6b6b;
+  border-radius: 8px;
+  padding: 15px;
+  z-index: 10000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-width: 300px;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.debug-info h3 {
+  margin: 0 0 10px 0;
+  color: #ff6b6b;
+  font-size: 14px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+}
+
+.debug-info p {
+  margin: 5px 0;
+  line-height: 1.4;
+}
+
+.debug-info strong {
+  color: #333;
+}
+
+.close-debug-btn {
+  margin-top: 10px;
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.close-debug-btn:hover {
+  background: #ff5252;
+}
+
+/* 环境标识徽章 */
+.env-badge {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 8px;
+  background: #ffd700;
+  color: #333;
+  border-radius: 12px;
+  font-size: 0.8em;
+  font-weight: bold;
+}
+
 /* 主布局 */
 #app {
   min-height: 100vh;
@@ -380,6 +473,10 @@ const showContactInfo = () => {
   text-align: center;
   color: var(--muted);
   font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* 响应式设计 */
@@ -445,6 +542,13 @@ const showContactInfo = () => {
   .footer-links {
     gap: 2rem;
   }
+  
+  /* 移动端调试信息调整 */
+  .debug-info {
+    max-width: 250px;
+    font-size: 11px;
+    padding: 10px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -459,6 +563,11 @@ const showContactInfo = () => {
   .footer-links {
     flex-direction: column;
     gap: 1.5rem;
+  }
+  
+  .debug-info {
+    max-width: 200px;
+    font-size: 10px;
   }
 }
 </style>

@@ -8,8 +8,15 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:test": "vite --mode test",
     "build": "vite build",
-    "preview": "vite preview"
+    "build:test": "vite build --mode test",
+    "build:prod": "vite build --mode production",
+    "preview": "vite preview",
+    "preview:test": "vite preview --mode test",
+    "preview:prod": "vite preview --mode production",
+    "deploy:test": "npm run build:test && wrangler pages deploy dist",
+    "deploy:prod": "npm run build:prod && wrangler pages deploy dist"
   },
   "dependencies": {
     "chart.js": "^4.5.1",
@@ -21,6 +28,7 @@
     "@vitejs/plugin-vue": "^6.0.1",
     "sass": "^1.93.2",
     "vite": "^7.1.7",
-    "vite-plugin-vue-devtools": "^8.0.2"
+    "vite-plugin-vue-devtools": "^8.0.2",
+    "wrangler": "^3.83.0"
   }
 }

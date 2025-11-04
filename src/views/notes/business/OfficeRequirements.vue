@@ -115,19 +115,19 @@
                   <td><strong>本店（主たる事務所）</strong></td>
                   <td>主要的事务所，公司总部</td>
                   <td class="required">属于事务所</td>
-                  <td>无论是否从事宅建业，都视为事务所[citation:1]</td>
+                  <td>无论是否从事宅建业，都视为事务所</td>
                 </tr>
                 <tr>
                   <td><strong>支店（従たる事務所）</strong></td>
                   <td>分支机构</td>
                   <td class="required">属于事务所</td>
-                  <td>只有从事宅建业时才算是事务所[citation:1]</td>
+                  <td>只有从事宅建业时才算是事务所</td>
                 </tr>
                 <tr>
                   <td><strong>持续业务设施</strong></td>
                   <td>现地案内所、样板房等</td>
                   <td class="required">属于事务所</td>
-                  <td>配备有契约缔结权限的店长时视为事务所[citation:1]</td>
+                  <td>配备有契约缔结权限的店长时视为事务所</td>
                 </tr>
               </tbody>
             </table>
@@ -144,7 +144,7 @@
         <section id="five-points-set" class="content-section">
           <h2>2. 事务所的5点set要求</h2>
           
-          <p>每个事务所必须独立配备以下五项内容，不可相互替代，也不可只在主事务所统一配备[citation:1]。</p>
+          <p>每个事务所必须独立配备以下五项内容，不可相互替代，也不可只在主事务所统一配备。</p>
 
           <div class="five-points-diagram">
             <div class="point-item">
@@ -197,7 +197,7 @@
           <h3>基本要求</h3>
           <ul>
             <li><strong>设置要求</strong>：每个事务所必须配备从业者名簿</li>
-            <li><strong>形式</strong>：可以是电子版[citation:1]</li>
+            <li><strong>形式</strong>：可以是电子版</li>
             <li><strong>范围</strong>：包含代表者和暂时的事务辅助者</li>
           </ul>
 
@@ -222,18 +222,18 @@
                 <tr>
                   <td><strong>住所</strong></td>
                   <td class="required">必须记载</td>
-                  <td class="not-required">不需要记载[citation:1][citation:9]</td>
-                  <td rowspan="3">保护从业者隐私，从业者名簿可能被交易关系者查阅[citation:1]</td>
+                  <td class="not-required">不需要记载</td>
+                  <td rowspan="3">保护从业者隐私，从业者名簿可能被交易关系者查阅</td>
                 </tr>
                 <tr>
                   <td><strong>生年月日</strong></td>
                   <td class="required">必须记载</td>
-                  <td class="not-required">不需要记载[citation:1][citation:9]</td>
+                  <td class="not-required">不需要记载</td>
                 </tr>
                 <tr>
                   <td><strong>性别</strong></td>
                   <td class="required">必须记载</td>
-                  <td class="not-required">不需要记载[citation:10]</td>
+                  <td class="not-required">不需要记载</td>
                 </tr>
                 <tr>
                   <td><strong>入职/离职时间</strong></td>
@@ -259,10 +259,10 @@
 
           <h3>其他规定</h3>
           <ul>
-            <li><strong>保存期间</strong>：自最终记载日起<strong>10年</strong>[citation:1]</li>
-            <li><strong>阅览义务</strong>：交易关系者请求查阅时必须提供[citation:1]</li>
-            <li><strong>罚则</strong>：未配备、虚假记载或未记载必要事项，处以<strong>50万日元</strong>罚金[citation:1]</li>
-            <li><strong>携带义务</strong>：从业者必须携带从业者证明书，被请求时必须提示（宅建士证不可替代）[citation:1]</li>
+            <li><strong>保存期间</strong>：自最终记载日起<strong>10年</strong></li>
+            <li><strong>阅览义务</strong>：交易关系者请求查阅时必须提供</li>
+            <li><strong>罚则</strong>：未配备、虚假记载或未记载必要事项，处以<strong>50万日元</strong>罚金</li>
+            <li><strong>携带义务</strong>：从业者必须携带从业者证明书，被请求时必须提示（宅建士证不可替代）</li>
           </ul>
         </section>
 
@@ -272,8 +272,8 @@
           
           <h3>基本要求</h3>
           <ul>
-            <li><strong>设置要求</strong>：每个事务所必须配备账簿[citation:1]</li>
-            <li><strong>形式</strong>：可以是电子版，但需能随时打印[citation:1]</li>
+            <li><strong>设置要求</strong>：每个事务所必须配备账簿</li>
+            <li><strong>形式</strong>：可以是电子版，但需能随时打印</li>
           </ul>
 
           <h3>记载内容</h3>
@@ -347,7 +347,7 @@
                 <tr>
                   <td><strong>保存期间（例外）</strong></td>
                   <td><strong>10年</strong></td>
-                  <td>业者自己作为卖主时的新筑住宅（自ら売主の新築住宅）[citation:1]</td>
+                  <td>业者自己作为卖主时的新筑住宅（自ら売主の新築住宅）</td>
                 </tr>
                 <tr>
                   <td><strong>阅览义务</strong></td>
@@ -371,8 +371,8 @@
           <h3>设置要求</h3>
           <ul>
             <li><strong>比例要求</strong>：每<strong>5个</strong>工作人员中必须配备<strong>1个</strong>成年专任宅建士[citation:1]</li>
-            <li><strong>补足期限</strong>：人数不足时需在<strong>2周内</strong>补足，否则停业[citation:1]</li>
-            <li><strong>专任含义</strong>：在事务所常勤，专职从事宅建业（允许IT环境下远程办公）[citation:1]</li>
+            <li><strong>补足期限</strong>：人数不足时需在<strong>2周内</strong>补足，否则停业</li>
+            <li><strong>专任含义</strong>：在事务所常勤，专职从事宅建业（允许IT环境下远程办公）</li>
           </ul>
 
           <div class="case-scenario">
@@ -386,8 +386,8 @@
 
           <h3>特殊规定</h3>
           <ul>
-            <li>宅建业者（法人的情况下为其役员）是宅建士时，在其主要从事业务的事务所，视为成年专任宅建士[citation:1]</li>
-            <li>从业者8人的情况下，至少需要2名宅建士[citation:1]</li>
+            <li>宅建业者（法人的情况下为其役员）是宅建士时，在其主要从事业务的事务所，视为成年专任宅建士</li>
+            <li>从业者8人的情况下，至少需要2名宅建士</li>
           </ul>
         </section>
 
@@ -415,8 +415,8 @@
           <h3>基本要求</h3>
           <ul>
             <li><strong>揭示场所</strong>：每个事务所的<strong>显眼地方</strong></li>
-            <li><strong>尺寸要求</strong>：<strong>35cm以上</strong>[citation:1]</li>
-            <li><strong>性质</strong>：宅建业者自己作成，与免许证不同[citation:1]</li>
+            <li><strong>尺寸要求</strong>：<strong>35cm以上</strong></li>
+            <li><strong>性质</strong>：宅建业者自己作成，与免许证不同</li>
           </ul>
 
           <h3>标识记载内容（2025年法改正后）</h3>
@@ -468,24 +468,24 @@
                 <tr>
                   <td><strong>专任宅建士的氏名</strong></td>
                   <td class="required">必须记载</td>
-                  <td class="not-required">不需要记载[citation:1][citation:9]</td>
-                  <td rowspan="2">保护个人隐私，突出实务相关信息[citation:1]</td>
+                  <td class="not-required">不需要记载</td>
+                  <td rowspan="2">保护个人隐私，突出实务相关信息</td>
                 </tr>
                 <tr>
                   <td><strong>专任宅建士的人数</strong></td>
                   <td class="not-required">不需要记载</td>
-                  <td class="required">必须记载[citation:1][citation:9]</td>
+                  <td class="required">必须记载</td>
                 </tr>
                 <tr>
                   <td><strong>事务所的代表者氏名</strong></td>
                   <td class="not-required">不需要记载</td>
-                  <td class="required">必须记载[citation:1][citation:9]</td>
+                  <td class="required">必须记载</td>
                   <td>明确责任所在</td>
                 </tr>
                 <tr>
                   <td><strong>从业者数</strong></td>
                   <td class="not-required">不需要记载</td>
-                  <td class="required">必须记载[citation:1]</td>
+                  <td class="required">必须记载</td>
                   <td>反映业务规模</td>
                 </tr>
               </tbody>
@@ -494,9 +494,9 @@
 
           <h3>特殊场所的标识义务</h3>
           <ul>
-            <li><strong>分让楼盘所在地</strong>：进行宅地建物分让的宅建业者，必须在宅地建物的所在地揭示标识[citation:1]</li>
-            <li><strong>案内所</strong>：设置案内所的业者，必须在案内所里设置标识[citation:1]</li>
-            <li><strong>展会等场所</strong>：宅建业者在展会等类似场所也要揭示标识[citation:1]</li>
+            <li><strong>分让楼盘所在地</strong>：进行宅地建物分让的宅建业者，必须在宅地建物的所在地揭示标识</li>
+            <li><strong>案内所</strong>：设置案内所的业者，必须在案内所里设置标识</li>
+            <li><strong>展会等场所</strong>：宅建业者在展会等类似场所也要揭示标识</li>
           </ul>
 
           <div class="case-scenario">
@@ -515,7 +515,7 @@
           <h2>8. 案内所的特殊规定</h2>
           
           <h3>案内所的定义</h3>
-          <p>契约缔结案内所、契约申请案内所，如售楼处、展会场所等[citation:1]。</p>
+          <p>契约缔结案内所、契约申请案内所，如售楼处、展会场所等。</p>
 
           <h3>与事务所的区别</h3>
           <div class="table-container">
@@ -531,17 +531,17 @@
                 <tr>
                   <td><strong>报酬额揭示</strong></td>
                   <td class="required">必须揭示</td>
-                  <td class="not-required">不需要揭示[citation:1]</td>
+                  <td class="not-required">不需要揭示</td>
                 </tr>
                 <tr>
                   <td><strong>标识记载</strong></td>
                   <td>记载本事务所信息</td>
-                  <td>需记载设置业者信息+卖主信息[citation:1]</td>
+                  <td>需记载设置业者信息+卖主信息</td>
                 </tr>
                 <tr>
                   <td><strong>宅建士配备</strong></td>
                   <td class="required">必须配备</td>
-                  <td class="required">进行分让或媒介时必须配备[citation:1]</td>
+                  <td class="required">进行分让或媒介时必须配备</td>
                 </tr>
                 <tr>
                   <td><strong>5点set</strong></td>
@@ -561,7 +561,7 @@
             <div class="reform-item">
               <div class="reform-date">2025年1月1日</div>
               <div class="reform-content">
-                <h4>指定流通机构（REINS）登记事项强化[citation:1][citation:5]</h4>
+                <h4>指定流通机构（REINS）登记事项强化</h4>
                 <ul>
                   <li>追加"交易申请受理状况"登记义务</li>
                   <li>防止"围标"行为，确保交易透明度</li>
@@ -583,7 +583,7 @@
             <div class="reform-item">
               <div class="reform-date">令和6年5月25日</div>
               <div class="reform-content">
-                <h4>国土交通大臣免许申请简化[citation:3][citation:7]</h4>
+                <h4>国土交通大臣免许申请简化</h4>
                 <ul>
                   <li>申请不再经由都道府县知事，直接向地方整备局申请</li>
                   <li>案内所等届出也直接向地方整备局提出</li>
