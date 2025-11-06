@@ -1,0 +1,10 @@
+src/components/SimulatedLogin.vue
+src/components/TheWelcome.vue
+src/components/VideoUploader.vue
+src/components/common/BaseCTASection.vue
+src/components/AppNavBar.vue
+src/components/DataSyncStatus.vue
+src/components/VipGuard.vue
+src/components/business/GroupItem.vue
+src/components/business/CommunitySectionCard.vue
+src/components/UserCenter.vue

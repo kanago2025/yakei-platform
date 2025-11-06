@@ -7,10 +7,21 @@
           <h1>学习仪表盘</h1>
           <p>可视化学习进度，智能分析学习数据，个性化学习建议，助您高效备考</p>
           
-          <!-- VIP用户专属提示 -->
-          <div v-if="userStore.isPremium" class="premium-badge">
-            <span class="badge-icon">⭐</span>
-            <span>尊贵会员可查看详细学习分析报告</span>
+          <!-- VIP状态显示 -->
+          <div class="vip-status-section">
+            <div v-if="vipStore.isVipUser" class="vip-badge">
+              <span class="badge-icon">👑</span>
+              <div class="vip-info">
+                <span class="vip-title">尊贵VIP会员</span>
+                <span class="vip-expire">有效期至 {{ formatVipExpireDate }}</span>
+              </div>
+            </div>
+            <div v-else class="free-user-prompt">
+              <span class="prompt-text">升级VIP解锁高级功能</span>
+              <button class="btn btn-premium-small" @click="goToVipPurchase">
+                ⭐ 立即升级
+              </button>
+            </div>
           </div>
           
           <div class="header-stats">
@@ -86,6 +97,95 @@
           </div>
         </section>
 
+        <!-- VIP专属：高级学习分析 -->
+        <section v-if="vipStore.isVipUser" class="vip-analytics-section">
+          <div class="section-header">
+            <h2>🎯 VIP高级分析</h2>
+            <p>深度学习洞察，助力高效备考</p>
+          </div>
+          <div class="vip-analytics-grid">
+            <div class="vip-analytics-card">
+              <div class="analytics-header">
+                <div class="analytics-icon">📈</div>
+                <h3>学习趋势分析</h3>
+              </div>
+              <div class="analytics-content">
+                <p>本周学习时长: <strong>{{ formatStudyTime(recentStudyTime) }}</strong></p>
+                <p>学习效率: <strong>{{ studyEfficiency }}%</strong></p>
+                <div class="trend-indicator" :class="studyTrend">
+                  趋势: {{ studyTrendText }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="vip-analytics-card">
+              <div class="analytics-header">
+                <div class="analytics-icon">🎯</div>
+                <h3>薄弱知识点</h3>
+              </div>
+              <div class="analytics-content">
+                <div v-for="weakTopic in weakTopics" :key="weakTopic.id" class="weak-topic">
+                  <span class="topic-name">{{ weakTopic.name }}</span>
+                  <span class="topic-progress">{{ weakTopic.progress }}%</span>
+                </div>
+                <div v-if="weakTopics.length === 0" class="no-weak-topics">
+                  恭喜！暂无薄弱知识点
+                </div>
+              </div>
+            </div>
+            
+            <div class="vip-analytics-card">
+              <div class="analytics-header">
+                <div class="analytics-icon">💡</div>
+                <h3>智能学习建议</h3>
+              </div>
+              <div class="analytics-content">
+                <div class="suggestion-item" v-for="suggestion in learningSuggestions" :key="suggestion">
+                  ✓ {{ suggestion }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIP试用提示 -->
+        <section v-if="!vipStore.isVipUser && userStore.isLoggedIn" class="vip-preview-section">
+          <div class="vip-preview-card">
+            <div class="preview-header">
+              <h3>🔒 VIP功能预览</h3>
+              <span class="preview-badge">VIP专属</span>
+            </div>
+            <div class="preview-content">
+              <div class="preview-features">
+                <div class="preview-feature">
+                  <div class="feature-icon">📈</div>
+                  <div class="feature-info">
+                    <h4>高级学习分析</h4>
+                    <p>深度洞察学习趋势和薄弱环节</p>
+                  </div>
+                </div>
+                <div class="preview-feature">
+                  <div class="feature-icon">🎯</div>
+                  <div class="feature-info">
+                    <h4>智能学习建议</h4>
+                    <p>基于AI的个性化备考策略</p>
+                  </div>
+                </div>
+                <div class="preview-feature">
+                  <div class="feature-icon">📊</div>
+                  <div class="feature-info">
+                    <h4>详细数据报告</h4>
+                    <p>完整的学习数据分析和可视化</p>
+                  </div>
+                </div>
+              </div>
+              <button class="btn btn-premium" @click="goToVipPurchase">
+                👑 升级VIP解锁全部功能
+              </button>
+            </div>
+          </div>
+        </section>
+
         <!-- 五大分野掌握度 -->
         <section class="domains-section">
           <div class="section-header">
@@ -114,6 +214,14 @@
                   ></div>
                 </div>
               </div>
+              <!-- VIP专属：详细分析按钮 -->
+              <button 
+                v-if="vipStore.isVipUser" 
+                class="btn btn-outline btn-sm"
+                @click="viewDomainAnalysis(domain.id)"
+              >
+                详细分析
+              </button>
             </div>
           </div>
         </section>
@@ -186,16 +294,23 @@
           </div>
         </section>
 
-        <!-- 免费用户升级提示 -->
-        <section v-if="userStore.isLoggedIn && !userStore.isPremium" class="upgrade-prompt">
-          <div class="prompt-content">
-            <h3>升级尊贵会员，解锁更多学习功能</h3>
-            <p>尊贵会员可享受详细学习分析、个性化学习路径、AI智能推荐等高级功能</p>
-            <button class="btn btn-premium" @click="upgradeToPremium">
-              ⭐ 升级尊贵会员
-            </button>
+        <!-- VIP权限控制示例 -->
+        <div class="vip-example-section">
+          <div class="vip-feature-demo">
+            <h3>VIP功能体验</h3>
+            <div class="demo-actions">
+              <button class="btn btn-primary" @click="testSmartPaper">
+                测试智能组卷功能
+              </button>
+              <vip-guard 
+                v-if="showSmartPaperGuard"
+                feature="smart_paper"
+                message="智能组卷是VIP专属功能，可根据您的错题智能生成个性化试卷"
+                @close="showSmartPaperGuard = false"
+              />
+            </div>
           </div>
-        </section>
+        </div>
       </main>
     </div>
   </div>
@@ -203,11 +318,18 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useLearningStore } from '@/stores/learning'
+import { useVipStore } from '@/stores/vipStore'
+import VipGuard from '@/components/VipGuard.vue'
 
+const router = useRouter()
 const userStore = useUserStore()
 const learningStore = useLearningStore()
+const vipStore = useVipStore()
+
+const showSmartPaperGuard = ref(false)
 
 // 主题名称映射
 const topicNames = {
@@ -256,7 +378,7 @@ const domainStats = [
   { id: 'exempt', name: '五问免除', icon: '✅' }
 ]
 
-// 计算属性 - 修复与 store 结构匹配
+// 计算属性
 const learnedTopicsCount = computed(() => {
   return Object.values(learningStore.progress).filter(topic => 
     topic.completionPercentage > 0
@@ -267,6 +389,11 @@ const totalStudyTime = computed(() => {
   return Object.values(learningStore.progress).reduce((sum, topic) => 
     sum + topic.totalStudyTime, 0
   )
+})
+
+const recentStudyTime = computed(() => {
+  // 模拟最近一周学习时间
+  return totalStudyTime.value * 0.3 // 假设最近一周占30%
 })
 
 const streakDays = computed(() => {
@@ -283,6 +410,63 @@ const correctRate = computed(() => {
   
   const totalScore = topicsWithScore.reduce((sum, topic) => sum + topic.quizScore, 0)
   return Math.round(totalScore / topicsWithScore.length)
+})
+
+const studyEfficiency = computed(() => {
+  // 模拟学习效率计算
+  const baseEfficiency = 65
+  const progressBonus = Math.min(learningStore.overallProgress / 2, 20)
+  const streakBonus = Math.min(streakDays.value, 15)
+  return Math.min(baseEfficiency + progressBonus + streakBonus, 95)
+})
+
+const studyTrend = computed(() => {
+  const progress = learningStore.overallProgress
+  if (progress > 70) return 'up'
+  if (progress > 40) return 'stable'
+  return 'down'
+})
+
+const studyTrendText = computed(() => {
+  switch (studyTrend.value) {
+    case 'up': return '上升'
+    case 'stable': return '稳定'
+    case 'down': return '需加强'
+    default: return '稳定'
+  }
+})
+
+const weakTopics = computed(() => {
+  return Object.entries(learningStore.progress)
+    .filter(([_, progress]) => progress.completionPercentage < 50)
+    .slice(0, 3)
+    .map(([topicId, progress]) => ({
+      id: topicId,
+      name: getTopicName(topicId),
+      progress: progress.completionPercentage
+    }))
+})
+
+const learningSuggestions = computed(() => {
+  const suggestions = []
+  
+  if (learningStore.overallProgress < 30) {
+    suggestions.push('建议先从基础知识点开始学习')
+  }
+  
+  if (weakTopics.value.length > 0) {
+    suggestions.push(`重点复习 ${weakTopics.value[0].name}`)
+  }
+  
+  if (streakDays.value < 7) {
+    suggestions.push('保持每日学习习惯，提高连续性')
+  }
+  
+  if (correctRate.value < 60) {
+    suggestions.push('加强错题练习，提高正确率')
+  }
+  
+  return suggestions.length > 0 ? suggestions : ['学习状态良好，继续保持！']
 })
 
 const recentActivities = computed(() => {
@@ -304,6 +488,11 @@ const recentActivities = computed(() => {
     })
   
   return activities
+})
+
+const formatVipExpireDate = computed(() => {
+  if (!vipStore.vipStatus.expireAt) return ''
+  return new Date(vipStore.vipStatus.expireAt).toLocaleDateString('zh-CN')
 })
 
 // 方法
@@ -374,9 +563,24 @@ const calculateDomainProgress = (domainId) => {
   return Math.round(totalProgress / domainTopics.length)
 }
 
-const upgradeToPremium = () => {
-  userStore.isPremium = true
-  alert('已升级为尊贵会员！')
+const viewDomainAnalysis = (domainId) => {
+  if (!vipStore.isVipUser) {
+    alert('此功能需要VIP权限')
+    return
+  }
+  alert(`查看${domainStats.find(d => d.id === domainId)?.name}的详细分析`)
+}
+
+const testSmartPaper = () => {
+  if (!vipStore.hasFeature('smart_paper')) {
+    showSmartPaperGuard.value = true
+    return
+  }
+  alert('开始智能组卷...')
+}
+
+const goToVipPurchase = () => {
+  router.push('/vip/purchase')
 }
 
 const login = () => {
@@ -437,17 +641,67 @@ onMounted(() => {
   line-height: 1.6;
 }
 
-.premium-badge {
+/* VIP状态区域 */
+.vip-status-section {
+  margin-bottom: 2rem;
+}
+
+.vip-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   background: linear-gradient(135deg, #fef3c7, #fde68a);
   color: #92400e;
-  padding: 8px 16px;
+  padding: 12px 20px;
   border-radius: 20px;
-  font-size: 14px;
   font-weight: 600;
-  margin-bottom: 20px;
+  margin-bottom: 1rem;
+}
+
+.vip-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vip-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.vip-expire {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.free-user-prompt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.prompt-text {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.btn-premium-small {
+  background: #f59e0b;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-premium-small:hover {
+  background: #d97706;
+  transform: translateY(-1px);
 }
 
 .header-stats {
@@ -565,6 +819,186 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.8);
 }
 
+/* VIP高级分析区域 */
+.vip-analytics-section {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+  border: 2px solid #f59e0b;
+}
+
+.vip-analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.vip-analytics-card {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+}
+
+.analytics-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.analytics-icon {
+  font-size: 1.5rem;
+}
+
+.analytics-header h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e5a47;
+  margin: 0;
+}
+
+.analytics-content p {
+  margin: 0.5rem 0;
+  color: #64748b;
+}
+
+.trend-indicator {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.trend-indicator.up {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.trend-indicator.stable {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.trend-indicator.down {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.weak-topic {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.weak-topic:last-child {
+  border-bottom: none;
+}
+
+.topic-name {
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.topic-progress {
+  font-size: 0.75rem;
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.no-weak-topics {
+  text-align: center;
+  color: #10b981;
+  font-size: 0.875rem;
+  padding: 1rem 0;
+}
+
+.suggestion-item {
+  padding: 0.5rem 0;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+/* VIP预览区域 */
+.vip-preview-section {
+  margin-bottom: 2rem;
+}
+
+.vip-preview-card {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 2px dashed #e2e8f0;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.preview-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e5a47;
+  margin: 0;
+}
+
+.preview-badge {
+  background: #f59e0b;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.preview-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.preview-feature {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.feature-icon {
+  font-size: 1.5rem;
+  width: 3rem;
+  height: 3rem;
+  background: rgba(42, 121, 96, 0.1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2a7960;
+}
+
+.feature-info h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e5a47;
+  margin: 0 0 0.25rem 0;
+}
+
+.feature-info p {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0;
+}
+
 /* 五大分野掌握度 */
 .domains-section {
   background: white;
@@ -656,6 +1090,22 @@ onMounted(() => {
 
 .progress-fill.average {
   background: #ef4444;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid #2a7960;
+  color: #2a7960;
+}
+
+.btn-outline:hover {
+  background: #2a7960;
+  color: white;
+}
+
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
 }
 
 /* 知识点掌握情况 */
@@ -841,18 +1291,13 @@ onMounted(() => {
 }
 
 /* 登录提示 */
-.login-prompt, .upgrade-prompt {
+.login-prompt {
   background: white;
   border-radius: 12px;
   padding: 2.5rem;
   text-align: center;
   margin: 2.5rem 0;
   border: 1px solid #e2e8f0;
-}
-
-.upgrade-prompt {
-  border: 2px solid #f59e0b;
-  background: linear-gradient(135deg, #fffbeb, #fef3c7);
 }
 
 .prompt-content h3 {
@@ -868,6 +1313,26 @@ onMounted(() => {
   max-width: 500px;
   margin-left: auto;
   margin-right: auto;
+}
+
+/* VIP示例区域 */
+.vip-example-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.vip-feature-demo h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e5a47;
+  margin-bottom: 1rem;
+}
+
+.demo-actions {
+  position: relative;
 }
 
 /* 响应式设计 */
@@ -906,6 +1371,19 @@ onMounted(() => {
     gap: 0.5rem;
     align-items: flex-start;
   }
+  
+  .vip-analytics-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .preview-features {
+    grid-template-columns: 1fr;
+  }
+  
+  .free-user-prompt {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -923,6 +1401,12 @@ onMounted(() => {
     flex-direction: column;
     gap: 0.75rem;
     text-align: center;
+  }
+  
+  .vip-badge {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
   }
 }
 </style>

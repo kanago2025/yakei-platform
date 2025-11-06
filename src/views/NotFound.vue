@@ -1,68 +1,43 @@
+<!-- src/views/NotFound.vue -->
 <template>
-  <div class="not-found-container">
-    <div class="not-found-content">
+  <div class="not-found">
+    <div class="content">
       <h1>404</h1>
       <h2>页面未找到</h2>
       <p>抱歉，您访问的页面不存在。</p>
-      <button @click="goHome" class="btn-primary">返回首页</button>
+      <el-button type="primary" @click="$router.push('/')">
+        返回首页
+      </el-button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
-
-const goHome = () => {
-  router.push('/')
-}
+// 404页面逻辑
 </script>
 
 <style scoped>
-.not-found-container {
+.not-found {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 60vh;
-  padding: 20px;
-}
-
-.not-found-content {
+  height: 60vh;
   text-align: center;
 }
 
-.not-found-content h1 {
-  font-size: 120px;
-  font-weight: bold;
-  color: #e0e0e0;
+.content h1 {
+  font-size: 80px;
+  color: #409EFF;
   margin: 0;
-  line-height: 1;
 }
 
-.not-found-content h2 {
+.content h2 {
   font-size: 24px;
-  color: #333;
-  margin: 20px 0 10px;
+  margin: 10px 0;
 }
 
-.not-found-content p {
-  color: #666;
-  margin-bottom: 30px;
-}
-
-.btn-primary {
-  background: #007bff;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background 0.2s;
-}
-
-.btn-primary:hover {
-  background: #0056b3;
+.content p {
+  color: #909399;
+  margin-bottom: 20px;
 }
 </style>

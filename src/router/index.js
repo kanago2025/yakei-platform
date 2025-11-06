@@ -21,11 +21,11 @@ const featureConfig = {
     // 核心功能模块
     home: true,
     notes: true,
-    video: false,
-    practice: false,
+    video: true,        // 改为 true - 启用视频学习
+    practice: true,     // 改为 true - 启用强化练习
     exam: true,
     dashboard: true,
-    community: false,
+    community: true,    // 改为 true - 启用学习社群
     userManagement: false,
     
     // 知识领域控制
@@ -693,6 +693,143 @@ const routes = [
       topic: 'other-important-matters'
     }
   },
+// ========== 题目管理路由 ==========
+{
+  path: '/questions',
+  name: 'QuestionManagement',
+  component: () => import('@/views/QuestionManagement.vue'),
+  meta: {
+    title: `题目管理 - ${appTitle}`,
+    requiresAuth: false,
+    testPhase: true,
+    public: true
+  }
+},
+{
+  path: '/questions/list',
+  name: 'QuestionList',
+  component: () => import('@/views/questions/List.vue'),
+  meta: {
+    title: `题目列表 - ${appTitle}`,
+    requiresAuth: false,
+    testPhase: true,
+    public: true
+  }
+},
+{
+  path: '/questions/add',
+  name: 'AddQuestion',
+  component: () => import('@/views/questions/Add.vue'),
+  meta: {
+    title: `添加题目 - ${appTitle}`,
+    requiresAuth: false,
+    testPhase: true,
+    public: true
+  }
+},
+{
+  path: '/questions/categories',
+  name: 'QuestionCategories',
+  component: () => import('@/views/questions/Categories.vue'),
+  meta: {
+    title: `题目分类 - ${appTitle}`,
+    requiresAuth: false,
+    testPhase: true,
+    public: true
+  }
+},
+{
+  path: '/questions/import',
+  name: 'QuestionImport',
+  component: () => import('@/views/questions/Import.vue'),
+  meta: {
+    title: `批量导入 - ${appTitle}`,
+    requiresAuth: false,
+    public: true
+  }
+},
+
+// ========== 考试练习路由 ==========
+{
+  path: '/exams/simulate',
+  name: 'ExamSimulate',
+  component: () => import('@/views/exams/Simulate.vue'),
+  meta: {
+    title: `模拟考试 - ${appTitle}`,
+    requiresAuth: false,
+    testPhase: true,
+    public: true
+  }
+},
+{
+  path: '/exams/history',
+  name: 'ExamHistory',
+  component: () => import('@/views/exams/History.vue'),
+  meta: {
+    title: `考试记录 - ${appTitle}`,
+    requiresAuth: false,
+    testPhase: true,
+    public: true
+  }
+},
+{
+  path: '/exams/smart',
+  name: 'SmartExam',
+  component: () => import('@/views/exams/Smart.vue'),
+  meta: {
+    title: `智能组卷 - ${appTitle}`,
+    requiresAuth: false,
+    testPhase: true,
+    public: true
+  }
+},
+
+// ========== 其他功能路由 ==========
+{
+  path: '/wrong-answers',
+  name: 'WrongAnswers',
+  component: () => import('@/views/WrongAnswers.vue'),
+  meta: {
+    title: `错题本 - ${appTitle}`,
+    requiresAuth: false,
+    testPhase: true,
+    public: true
+  }
+},
+{
+  path: '/progress',
+  name: 'Progress',
+  component: () => import('@/views/Progress.vue'),
+  meta: {
+    title: `学习进度 - ${appTitle}`,
+    requiresAuth: false,
+    testPhase: true,
+    public: true
+  }
+},
+{
+  path: '/profile',
+  name: 'Profile',
+  component: () => import('@/views/Profile.vue'),
+  meta: {
+    title: `个人资料 - ${appTitle}`,
+    requiresAuth: false,
+    testPhase: true,
+    public: true
+  }
+},
+{
+  path: '/settings',
+  name: 'Settings',
+  component: () => import('@/views/Settings.vue'),
+  meta: {
+    title: `设置 - ${appTitle}`,
+    requiresAuth: false,
+    testPhase: true,
+    public: true
+  }
+},
+
 
   // ========== 用户管理 ==========
   {

@@ -63,16 +63,64 @@
               <span>考试记录</span>
               <span v-if="!userStore.isLoggedIn" class="tool-hint">需登录</span>
             </button>
-            <router-link to="/practice" class="tool-btn">
-              <span class="tool-icon">🎯</span>
-              <span>强化练习</span>
-            </router-link>
-            <router-link to="/video" class="tool-btn">
-              <span class="tool-icon">🎥</span>
-              <span>视频复习</span>
+            <button class="tool-btn" @click="startSmartExam" :disabled="!userStore.isLoggedIn">
+              <span class="tool-icon">🧠</span>
+              <span>智能组卷</span>
+              <span v-if="!userStore.isLoggedIn" class="tool-hint">需登录</span>
+            </button>
+            <router-link to="/wrong-answers" class="tool-btn">
+              <span class="tool-icon">📝</span>
+              <span>错题本</span>
             </router-link>
           </div>
         </div>
+      </div>
+
+      <!-- 组卷筛选栏 -->
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label>分野筛选：</label>
+          <select v-model="selectedField">
+            <option value="all">全部分野</option>
+            <option value="business">宅建业法</option>
+            <option value="rights">权利关系</option>
+            <option value="regulations">法令制限</option>
+            <option value="tax">税・其他</option>
+            <option value="exempt">五问免除</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label>题数设置：</label>
+          <select v-model="selectedCount">
+            <option value="10">10题</option>
+            <option value="20">20题</option>
+            <option value="30">30题</option>
+            <option value="50">50题</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label>考试模式：</label>
+          <select v-model="selectedMode">
+            <option value="timed">限时模式</option>
+            <option value="unlimited">不限时</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label>难度：</label>
+          <select v-model="selectedDifficulty">
+            <option value="all">全部难度</option>
+            <option value="easy">简单</option>
+            <option value="medium">中等</option>
+            <option value="hard">困难</option>
+          </select>
+        </div>
+        
+        <button class="btn btn-primary" @click="generateCustomExam" :disabled="!userStore.isLoggedIn">
+          {{ userStore.isLoggedIn ? '生成试卷' : '需登录' }}
+        </button>
       </div>
 
       <!-- 主要内容区域 -->
@@ -94,6 +142,54 @@
           </div>
 
           <div class="exam-grid">
+            <!-- 智能组卷卡片 -->
+            <div class="exam-card smart-exam-card" @click="startSmartExam">
+              <div class="card-header">
+                <div class="card-badge easy">智能</div>
+              </div>
+              
+              <div class="card-icon">🧠</div>
+              <h3 class="card-title">智能组卷</h3>
+              <p class="card-desc">基于您的学习数据和薄弱知识点，生成个性化练习试卷</p>
+              
+              <div class="card-meta">
+                <span class="meta-item">
+                  <span class="meta-icon">🎯</span>
+                  个性化
+                </span>
+                <span class="meta-item">
+                  <span class="meta-icon">📊</span>
+                  自适应
+                </span>
+                <span class="meta-item">
+                  <span class="meta-icon">⚡</span>
+                  高效学习
+                </span>
+              </div>
+              
+              <div class="smart-features">
+                <div class="feature-item">
+                  <span class="feature-icon">📈</span>
+                  <span>基于错题分析</span>
+                </div>
+                <div class="feature-item">
+                  <span class="feature-icon">🎯</span>
+                  <span>薄弱领域专项</span>
+                </div>
+                <div class="feature-item">
+                  <span class="feature-icon">🔄</span>
+                  <span>动态难度调整</span>
+                </div>
+              </div>
+              
+              <div class="card-actions">
+                <button class="btn btn-primary" :disabled="!userStore.isLoggedIn">
+                  {{ userStore.isLoggedIn ? '开始智能组卷' : '需登录' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- 其他考试卡片 -->
             <div 
               v-for="exam in filteredExams" 
               :key="exam.id"
@@ -139,6 +235,12 @@
                 </span>
               </div>
               
+              <!-- 错题统计 -->
+              <div class="wrong-questions" v-if="exam.wrongQuestionCount > 0">
+                <span class="wrong-icon">❌</span>
+                <span>有 {{ exam.wrongQuestionCount }} 道错题需要复习</span>
+              </div>
+              
               <div class="card-progress" v-if="exam.userScore !== null">
                 <div class="progress-text">
                   <span>您的成绩</span>
@@ -179,13 +281,23 @@
                   升级VIP
                 </button>
                 
-                <button 
-                  class="btn btn-outline"
-                  @click="retakeExam(exam)"
-                  :disabled="!canTakeExam(exam) || !userStore.isLoggedIn"
-                >
-                  重新考试
-                </button>
+                <!-- 错题相关操作 -->
+                <div class="action-group" v-if="exam.userScore !== null">
+                  <button 
+                    class="btn btn-outline"
+                    @click="reviewWrongQuestions(exam)"
+                    :disabled="exam.wrongQuestionCount === 0"
+                  >
+                    查看错题
+                  </button>
+                  <button 
+                    class="btn btn-outline"
+                    @click="smartRetake(exam)"
+                    :disabled="!canTakeExam(exam) || !userStore.isLoggedIn"
+                  >
+                    智能重做
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -256,6 +368,9 @@
           <div class="section-header">
             <h2>最近考试记录</h2>
             <p>查看您最近的考试表现和学习进度</p>
+            <button class="btn btn-outline" @click="showExamHistory">
+              查看全部记录
+            </button>
           </div>
 
           <div class="recent-grid">
@@ -278,10 +393,12 @@
                 <div class="exam-details">
                   <span class="detail-item">用时: {{ exam.timeUsed }}分钟</span>
                   <span class="detail-item">正确: {{ exam.correctCount }}/{{ exam.totalCount }}</span>
+                  <span class="detail-item" v-if="exam.wrongCount > 0">错题: {{ exam.wrongCount }}</span>
                 </div>
               </div>
               <div class="card-actions">
                 <button class="btn btn-outline" @click="reviewExam(exam)">查看详情</button>
+                <button class="btn btn-outline" @click="reviewWrongQuestions(exam)">查看错题</button>
                 <button class="btn btn-outline" @click="retakeExam(exam)">重新考试</button>
               </div>
             </div>
@@ -318,7 +435,9 @@
             <button class="btn btn-primary" @click="startQuickExam" :disabled="!userStore.isLoggedIn">
               {{ userStore.isLoggedIn ? '开始快速测试' : '请先登录' }}
             </button>
-            <router-link to="/practice" class="btn btn-secondary">强化练习</router-link>
+            <button class="btn btn-secondary" @click="startSmartExam" :disabled="!userStore.isLoggedIn">
+              {{ userStore.isLoggedIn ? '智能组卷' : '请先登录' }}
+            </button>
           </div>
         </div>
       </section>
@@ -335,79 +454,71 @@ const userStore = useUserStore()
 const router = useRouter()
 
 const mobileMenuOpen = ref(false)
-const activeType = ref('all')
-const selectedYear = ref('all')
+const activeType = ref('random')
+const selectedField = ref('all')
+const selectedCount = ref('20')
+const selectedMode = ref('timed')
 const selectedDifficulty = ref('all')
 
-// 考试类型数据
+// 考试类型数据 - 根据项目圣经调整为三大模块
 const examTypes = [
   { 
-    id: 'all', 
-    name: '全部考试', 
-    icon: '📚',
-    description: '所有类型的考试'
+    id: 'random', 
+    name: '过去问', 
+    icon: '🔀',
+    description: '随机组卷练习'
   },
   { 
-    id: 'simulation', 
-    name: '模拟考试', 
-    icon: '🎯',
-    description: '最新考纲模拟'
-  },
-  { 
-    id: 'past', 
+    id: 'yearly', 
     name: '历年真题', 
     icon: '📅',
     description: '历年实际考题'
   },
   { 
-    id: 'chapter', 
-    name: '章节测试', 
-    icon: '📖',
-    description: '按知识点测试'
-  },
-  { 
-    id: 'timed', 
-    name: '限时挑战', 
-    icon: '⏱️',
-    description: '时间压力测试'
+    id: 'simulation', 
+    name: '模拟测试', 
+    icon: '🎯',
+    description: '智能组卷模拟'
   }
 ]
 
-// 考试数据
+// 考试数据 - 根据项目圣经设计调整
 const exams = [
   {
-    id: 'exam-2024-1',
-    title: '2024年模拟考试 #1',
-    description: '基于最新考纲的全真模拟考试，涵盖所有考试领域',
-    type: 'simulation',
+    id: 'exam-random-1',
+    title: '随机组卷测试 #1',
+    description: '基于您的学习进度智能生成的随机试卷',
+    type: 'random',
     year: 2024,
-    duration: 120,
-    questionCount: 50,
+    duration: 60,
+    questionCount: 20,
     difficulty: '中等',
     difficultyClass: 'medium',
-    badgeText: '模拟',
-    icon: '1',
+    badgeText: '随机',
+    icon: '🔀',
     totalScore: 100,
-    passingScore: 70,
+    passingScore: 60,
     isNew: true,
     isRecommended: true,
     requiredSubscription: 'free',
-    userScore: 78,
-    attemptCount: 1,
-    bookmarked: true
+    userScore: null,
+    attemptCount: 0,
+    bookmarked: false,
+    wrongQuestionCount: 0,
+    fields: ['宅建业法', '权利关系']
   },
   {
     id: 'exam-2023-real',
     title: '2023年宅建士真题',
     description: '2023年实际考试题目，真实考试体验',
-    type: 'past',
+    type: 'yearly',
     year: 2023,
     duration: 120,
     questionCount: 50,
     difficulty: '中等',
     difficultyClass: 'medium',
     badgeText: '真题',
-    icon: '2',
+    icon: '📅',
     totalScore: 100,
     passingScore: 70,
     isNew: false,
@@ -415,20 +526,22 @@ const exams = [
     requiredSubscription: 'free',
     userScore: 65,
     attemptCount: 2,
-    bookmarked: false
+    bookmarked: false,
+    wrongQuestionCount: 3,
+    fields: ['宅建业法', '权利关系', '法令制限', '税・其他', '五问免除']
   },
   {
     id: 'exam-2022-real',
     title: '2022年宅建士真题',
     description: '2022年实际考试题目，历年真题练习',
-    type: 'past',
+    type: 'yearly',
     year: 2022,
     duration: 120,
     questionCount: 50,
     difficulty: '中等',
     difficultyClass: 'medium',
     badgeText: '真题',
-    icon: '3',
+    icon: '📅',
     totalScore: 100,
     passingScore: 70,
     isNew: false,
@@ -436,53 +549,59 @@ const exams = [
     requiredSubscription: 'free',
     userScore: null,
     attemptCount: 0,
-    bookmarked: false
+    bookmarked: false,
+    wrongQuestionCount: 0,
+    fields: ['宅建业法', '权利关系', '法令制限', '税・其他', '五问免除']
   },
   {
-    id: 'chapter-rights',
-    title: '权利关系章节测试',
-    description: '权利关系领域专项测试，重点考察民法相关知识',
-    type: 'chapter',
+    id: 'exam-simulation-1',
+    title: '智能模拟考试 #1',
+    description: '基于薄弱知识点生成的个性化模拟考试',
+    type: 'simulation',
     year: 2024,
-    duration: 60,
-    questionCount: 25,
-    difficulty: '简单',
-    difficultyClass: 'easy',
-    badgeText: '章节',
-    icon: '4',
+    duration: 120,
+    questionCount: 50,
+    difficulty: '中等',
+    difficultyClass: 'medium',
+    badgeText: '模拟',
+    icon: '🎯',
     totalScore: 100,
-    passingScore: 60,
+    passingScore: 70,
     isNew: true,
-    isRecommended: false,
+    isRecommended: true,
     requiredSubscription: 'free',
-    userScore: 85,
+    userScore: 78,
     attemptCount: 1,
-    bookmarked: true
+    bookmarked: true,
+    wrongQuestionCount: 2,
+    fields: ['权利关系', '法令制限']
   },
   {
-    id: 'timed-challenge-1',
-    title: '限时挑战 #1',
-    description: '高强度时间压力测试，提升答题速度',
-    type: 'timed',
+    id: 'exam-simulation-2',
+    title: '高难度模拟考试',
+    description: '挑战高难度题目，提升应试能力',
+    type: 'simulation',
     year: 2024,
-    duration: 90,
+    duration: 120,
     questionCount: 50,
     difficulty: '困难',
     difficultyClass: 'hard',
-    badgeText: '限时',
-    icon: '5',
+    badgeText: '模拟',
+    icon: '🎯',
     totalScore: 100,
-    passingScore: 70,
+    passingScore: 75,
     isNew: false,
     isRecommended: true,
     requiredSubscription: 'free',
     userScore: 72,
     attemptCount: 1,
-    bookmarked: false
+    bookmarked: false,
+    wrongQuestionCount: 5,
+    fields: ['宅建业法', '权利关系', '法令制限']
   },
   {
-    id: 'vip-exam-1',
-    title: 'VIP专属模拟 #1',
+    id: 'vip-simulation-1',
+    title: 'VIP专属模拟考试',
     description: '高难度模拟考试，包含最新题型和深度分析',
     type: 'simulation',
     year: 2024,
@@ -499,7 +618,9 @@ const exams = [
     requiredSubscription: 'premium',
     userScore: null,
     attemptCount: 0,
-    bookmarked: false
+    bookmarked: false,
+    wrongQuestionCount: 0,
+    fields: ['宅建业法', '权利关系', '法令制限', '税・其他', '五问免除']
   }
 ]
 
@@ -522,34 +643,37 @@ const domainStats = [
 
 const recentExams = [
   {
-    id: 'exam-2024-1',
-    title: '2024年模拟考试 #1',
+    id: 'exam-simulation-1',
+    title: '智能模拟考试 #1',
     date: '2024-01-15',
     score: 78,
     passingScore: 70,
     timeUsed: 115,
     correctCount: 39,
-    totalCount: 50
-  },
-  {
-    id: 'chapter-rights',
-    title: '权利关系章节测试',
-    date: '2024-01-12',
-    score: 85,
-    passingScore: 60,
-    timeUsed: 55,
-    correctCount: 21,
-    totalCount: 25
+    totalCount: 50,
+    wrongCount: 2
   },
   {
     id: 'exam-2023-real',
     title: '2023年宅建士真题',
-    date: '2024-01-10',
+    date: '2024-01-12',
     score: 65,
     passingScore: 70,
     timeUsed: 118,
     correctCount: 32,
-    totalCount: 50
+    totalCount: 50,
+    wrongCount: 3
+  },
+  {
+    id: 'exam-simulation-2',
+    title: '高难度模拟考试',
+    date: '2024-01-10',
+    score: 72,
+    passingScore: 75,
+    timeUsed: 120,
+    correctCount: 36,
+    totalCount: 50,
+    wrongCount: 5
   }
 ]
 
@@ -565,11 +689,6 @@ const filteredExams = computed(() => {
   // 按类型筛选
   if (activeType.value !== 'all') {
     filtered = filtered.filter(exam => exam.type === activeType.value)
-  }
-
-  // 按年份筛选
-  if (selectedYear.value !== 'all') {
-    filtered = filtered.filter(exam => exam.year === parseInt(selectedYear.value))
   }
 
   // 按难度筛选
@@ -646,12 +765,24 @@ const startExam = (exam) => {
   }
   
   console.log('开始考试:', exam.title)
-  alert(`开始考试: ${exam.title}`)
+  // 跳转到考试页面
+  router.push({
+    path: '/exam/session',
+    query: { 
+      examId: exam.id,
+      type: exam.type,
+      duration: exam.duration,
+      questionCount: exam.questionCount
+    }
+  })
 }
 
 const reviewExam = (exam) => {
   console.log('查看考试详情:', exam.title)
-  alert(`查看考试详情: ${exam.title}`)
+  router.push({
+    path: '/exam/review',
+    query: { examId: exam.id }
+  })
 }
 
 const retakeExam = (exam) => {
@@ -672,6 +803,38 @@ const retakeExam = (exam) => {
   }
 }
 
+const reviewWrongQuestions = (exam) => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以查看错题')
+    openLoginDialog()
+    return
+  }
+  
+  console.log('查看错题:', exam.title)
+  router.push({
+    path: '/wrong-answers',
+    query: { examId: exam.id }
+  })
+}
+
+const smartRetake = (exam) => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以使用智能重做')
+    openLoginDialog()
+    return
+  }
+  
+  console.log('智能重做:', exam.title)
+  // 跳转到智能组卷配置页面，基于该考试的错题生成新的试卷
+  router.push({
+    path: '/exam/smart-config',
+    query: { 
+      sourceExamId: exam.id,
+      wrongQuestions: exam.wrongQuestionCount
+    }
+  })
+}
+
 const startQuickExam = () => {
   if (!userStore.isLoggedIn) {
     alert('请先登录以开始快速测试')
@@ -683,10 +846,67 @@ const startQuickExam = () => {
     id: 'quick-test',
     title: '快速能力测试',
     description: '10道题目快速评估当前水平',
+    type: 'random',
     duration: 20,
-    questionCount: 10
+    questionCount: 10,
+    requiredSubscription: 'free'
   }
   startExam(quickExam)
+}
+
+const startSmartExam = () => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以使用智能组卷')
+    openLoginDialog()
+    return
+  }
+  
+  console.log('开始智能组卷')
+  router.push('/exam/smart-config')
+}
+
+const generateCustomExam = () => {
+  if (!userStore.isLoggedIn) {
+    alert('请先登录以生成自定义试卷')
+    openLoginDialog()
+    return
+  }
+  
+  const config = {
+    field: selectedField.value,
+    count: parseInt(selectedCount.value),
+    mode: selectedMode.value,
+    difficulty: selectedDifficulty.value
+  }
+  
+  console.log('生成自定义试卷:', config)
+  
+  const customExam = {
+    id: `custom-${Date.now()}`,
+    title: `自定义试卷 - ${selectedCount.value}题`,
+    description: `基于您的筛选条件生成的试卷 - ${getFieldName(selectedField.value)}`,
+    type: 'random',
+    duration: config.mode === 'timed' ? Math.ceil(config.count * 1.2) : 0, // 每题约1.2分钟
+    questionCount: config.count,
+    difficulty: config.difficulty === 'all' ? '中等' : 
+                config.difficulty === 'easy' ? '简单' :
+                config.difficulty === 'hard' ? '困难' : '中等',
+    requiredSubscription: 'free'
+  }
+  
+  startExam(customExam)
+}
+
+const getFieldName = (fieldId) => {
+  const fieldMap = {
+    'all': '全部分野',
+    'business': '宅建业法',
+    'rights': '权利关系',
+    'regulations': '法令制限',
+    'tax': '税・其他',
+    'exempt': '五问免除'
+  }
+  return fieldMap[fieldId] || '全部分野'
 }
 
 const showExamHistory = () => {
@@ -697,10 +917,12 @@ const showExamHistory = () => {
   }
   
   console.log('显示考试历史')
+  router.push('/exam/history')
 }
 
 const upgradeToPremium = () => {
   alert('升级VIP会员，享受更多专属功能')
+  router.push('/premium')
 }
 
 const switchType = (typeId) => {
@@ -756,13 +978,48 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* 新增智能组卷卡片样式 */
+.smart-exam-card {
+  background: linear-gradient(135deg, var(--primary-light), rgba(42, 121, 96, 0.1));
+  border: 2px dashed var(--primary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.smart-exam-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(42, 121, 96, 0.2);
+  border-color: var(--primary-dark);
+}
+
+.smart-features {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.feature-icon {
+  font-size: 1rem;
+}
+
+/* 其他现有样式保持不变 */
 .exam {
   min-height: 100vh;
   background-color: var(--bg);
   padding-top: 20px;
 }
 
-/* === 修复容器居中问题 === */
 .container {
   max-width: var(--max-width, 1200px);
   margin: 0 auto;
@@ -774,6 +1031,7 @@ onUnmounted(() => {
 /* 确保所有主要部分都有适当的间距 */
 .page-header,
 .quick-nav,
+.filter-bar,
 .main-content,
 .cta-section {
   margin-left: auto;
@@ -958,6 +1216,44 @@ onUnmounted(() => {
 
 .tool-icon {
   font-size: 20px;
+}
+
+/* ========= 组卷筛选栏 ========= */
+.filter-bar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin: 2rem 0;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  width: 100%;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--primary-dark);
+  white-space: nowrap;
+}
+
+.filter-group select {
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.875rem;
+  min-width: 100px;
 }
 
 /* ========= 主要内容区域 ========= */
@@ -1184,6 +1480,24 @@ onUnmounted(() => {
   font-size: 14px;
 }
 
+/* ========= 错题提示 ========= */
+.wrong-questions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #991b1b;
+}
+
+.wrong-icon {
+  font-size: 14px;
+}
+
 /* ========= 考试进度 ========= */
 .card-progress {
   background: var(--bg);
@@ -1235,6 +1549,12 @@ onUnmounted(() => {
 
 /* ========= 卡片操作 ========= */
 .card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-group {
   display: flex;
   gap: 8px;
 }
@@ -1457,6 +1777,7 @@ onUnmounted(() => {
   gap: 1rem;
   font-size: 0.75rem;
   color: var(--muted);
+  flex-wrap: wrap;
 }
 
 /* ========= 无考试状态 ========= */
@@ -1552,6 +1873,15 @@ onUnmounted(() => {
     grid-template-columns: 1fr;
   }
   
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filter-group {
+    justify-content: space-between;
+  }
+  
   .exam-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1603,6 +1933,10 @@ onUnmounted(() => {
   }
   
   .card-actions {
+    flex-direction: column;
+  }
+  
+  .action-group {
     flex-direction: column;
   }
   

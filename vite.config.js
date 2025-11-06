@@ -58,10 +58,41 @@ export default defineConfig(({ mode }) => {
         }
       }
     },
-    // 可选：添加环境特定配置
+    // 添加服务器配置，包括代理
     server: {
       port: 3000,
-      open: true
+      strictPort: true, // 强制使用3000端口，如果被占用就报错
+      open: true,
+      proxy: {
+        // 代理所有以 /api 开头的请求到后端服务器
+        '/api': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path,
+          configure: (proxy, options) => {
+            // 可选：添加代理事件监听用于调试
+            proxy.on('error', (err, req, res) => {
+              console.log('❌ 代理错误:', err);
+            });
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              console.log('🔄 代理请求:', req.method, req.url);
+            });
+          }
+        }
+      }
+    },
+    // 预览配置（用于生产构建预览）
+    preview: {
+      port: 3000,
+      strictPort: true, // 预览模式也强制使用3000端口
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+          secure: false
+        }
+      }
     }
   }
 })
